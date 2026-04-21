@@ -376,7 +376,7 @@ export default function AsistenteNEM() {
     setLoading(true);
     setResult("");
 
-    const API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
+    const API_KEY = "AIzaSyDDlKteBds31I6kFFhPixu9x0CC5UQEGMg";
 
     const prompt = `
 Eres un experto en diseño curricular de la Nueva Escuela Mexicana (NEM) de México.
