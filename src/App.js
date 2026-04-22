@@ -1,460 +1,86 @@
-import { useState, useCallback } from "react";
+import React, { useState } from "react";
 
-// ─────────────────────────────────────────────
-//  PALETA Y UTILIDADES
-// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+//  CONFIGURACIÓN Y CONSTANTES
+// ─────────────────────────────────────────────────────────────────────────────
 const STEPS = [
-  { id: 1, label: "Datos Generales",   icon: "👤" },
-  { id: 2, label: "Contexto",          icon: "🏫" },
-  { id: 3, label: "Currícula",         icon: "📚" },
-  { id: 4, label: "Estrategia",        icon: "🎯" },
-  { id: 5, label: "Extras",            icon: "✨" },
+  { id: 1, label: "Docente", icon: "👤" },
+  { id: 2, label: "Contexto", icon: "🏫" },
+  { id: 3, label: "Currícula", icon: "📚" },
+  { id: 4, label: "Metodología", icon: "🎯" },
+  { id: 5, label: "Plus", icon: "✨" },
 ];
 
 const CAMPOS = [
-  "Lenguajes",
-  "Saberes y Pensamiento Científico",
-  "Ética, Naturaleza y Sociedades",
-  "De lo Humano y lo Comunitario",
+  "Lenguajes",
+  "Saberes y Pensamiento Científico",
+  "Ética, Naturaleza y Sociedades",
+  "De lo Humano y lo Comunitario",
 ];
 
 const METODOLOGIAS = [
-  "Proyecto de Aula",
-  "Aprendizaje Basado en Problemas (ABP)",
-  "Aprendizaje Basado en Indagación",
-  "Aula Invertida",
-  "Aprendizaje Cooperativo",
-  "Aprendizaje Basado en el Servicio",
+  "Proyecto de Aula (NEM)",
+  "Aprendizaje Basado en Problemas (ABP)",
+  "Aprendizaje Basado en Indagación (STEAM)",
+  "Aula Invertida",
+  "Aprendizaje Basado en el Servicio",
 ];
 
 const initialForm = {
-  // Paso 1
-  docente: "", escuela: "", cct: "", municipio: "", estado: "",
-  // Paso 2
-  grado: "", nivel: "", disciplina: "", grupoAlumnos: "", problematica: "",
-  // Paso 3
-  campo: "", eje: "", contenido: "", pda: "",
-  // Paso 4
-  metodologia: "", sesiones: "3", duracion: "50", materiales: "",
-  // Paso 5
-  gamificacion: false, reciclaje: false, notasExtra: "",
-};
-
-// ─────────────────────────────────────────────
-//  MOCK DE PLANEACIÓN
-// ─────────────────────────────────────────────
-function generarMockPlaneacion(form) {
-  return `
-╔══════════════════════════════════════════════════════════════════════╗
-║          PLANEACIÓN DIDÁCTICA – NUEVA ESCUELA MEXICANA (NEM)         ║
-╚══════════════════════════════════════════════════════════════════════╝
-
-📋 DATOS GENERALES
-──────────────────
-• Docente      : ${form.docente || "Dr. Francisco De Jesús Luna Benítez"}
-• Escuela      : ${form.escuela || "N/A"}  |  CCT: ${form.cct || "—"}
-• Municipio    : ${form.municipio || "—"}, ${form.estado || "—"}
-• Grado/Nivel  : ${form.grado || "—"} – ${form.nivel || "—"}
-• Disciplina   : ${form.disciplina || "—"}
-• Grupo        : ${form.grupoAlumnos || "—"} alumnos
-
-🔍 PROBLEMÁTICA CONTEXTUAL
-──────────────────────────
-${form.problematica || "Se parte de la realidad del estudiante como eje articulador del aprendizaje."}
-
-📚 REFERENTES CURRICULARES
-──────────────────────────
-• Campo Formativo : ${form.campo || "—"}
-• Eje             : ${form.eje || "—"}
-• Contenido       : ${form.contenido || "—"}
-• Proceso de Desarrollo del Aprendizaje (PDA):
-  "${form.pda || "Desarrolla habilidades cognitivas y socioemocionales a través de situaciones auténticas."}"
-
-🎯 INTENCIÓN DIDÁCTICA
-──────────────────────
-Que el estudiantado sea capaz de comprender y analizar la problemática planteada,
-desarrollando pensamiento crítico, habilidades colaborativas y compromiso comunitario
-en el marco del ${form.campo || "campo formativo correspondiente"}.
-
-📅 SECUENCIA DE ACTIVIDADES (${form.sesiones || "3"} sesiones de ${form.duracion || "50"} min)
-─────────────────────────────────────────────────────
-📌 Sesión 1 – Activación y Diagnóstico
-   • Lluvia de ideas sobre la problemática central.
-   • Preguntas detonadoras para activar conocimientos previos.
-   • Registro colaborativo en pizarrón participativo.
-   • Cierre: acuerdo grupal sobre rutas de indagación.
-
-📌 Sesión 2 – Desarrollo y Construcción
-   • Trabajo en equipos con roles definidos (${form.metodologia || "Aprendizaje Basado en Proyectos"}).
-   • Análisis de fuentes primarias y secundarias.
-   • Elaboración de producto parcial (infografía / mapa conceptual / experimento).
-   • Socialización entre equipos y retroalimentación formativa.
-
-📌 Sesión ${form.sesiones > 2 ? "3" : "Final"} – Cierre, Evaluación y Transferencia
-   • Presentación del producto final al grupo.
-   • Reflexión metacognitiva: ¿Qué aprendí? ¿Cómo lo aplico?
-   • Evaluación formativa mediante rúbrica de desempeño.
-   • Vinculación con el entorno comunitario.
-
-🧰 MATERIALES Y RECURSOS
-─────────────────────────
-${form.materiales ? form.materiales : "• Cartulinas, marcadores, tijeras\n• Dispositivos con acceso a internet\n• Libros de texto SEP gratuitos\n• Material reciclado del entorno"}${form.reciclaje ? "\n• ♻️  Se priorizan materiales reciclados y de bajo costo" : ""}
-
-${form.gamificacion ? `🎮 ESTRATEGIA DE GAMIFICACIÓN
-──────────────────────────────
-• Sistema de puntos por participación y colaboración.
-• Insignias digitales para reconocimiento de logros.
-• Tablero de progreso visible para el grupo.
-• Retos opcionales para profundización voluntaria.
-
-` : ""}📊 EVALUACIÓN
-─────────────
-• Diagnóstica  : Exploración inicial de saberes previos.
-• Formativa    : Observación, diálogo docente-alumno, autoevaluación.
-• Sumativa     : Rúbrica holística de producto y proceso (Co-evaluación).
-• Criterios    : Participación, pensamiento crítico, colaboración, producto final.
-
-🌱 NOTAS ADICIONALES / ADECUACIONES
-─────────────────────────────────────
-${form.notasExtra || "Sin notas adicionales. El docente puede adaptar esta planeación según las necesidades específicas del grupo y del contexto escolar."}
-
-══════════════════════════════════════════════════════════════════════
-⚠️  Este documento fue generado con apoyo de IA como herramienta de
-    apoyo pedagógico. El docente es responsable de su revisión y ajuste.
-══════════════════════════════════════════════════════════════════════
-`.trim();
-}
-
-// ─────────────────────────────────────────────
-//  COMPONENTES AUXILIARES
-// ─────────────────────────────────────────────
-function Input({ label, required, ...props }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label className="text-xs font-semibold uppercase tracking-widest text-blue-700">
-        {label}{required && <span className="text-red-500 ml-1">*</span>}
-      </label>
-      <input
-        {...props}
-        className="rounded-lg border border-blue-200 bg-white/70 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
-      />
-    </div>
-  );
-}
-
-function Textarea({ label, required, ...props }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label className="text-xs font-semibold uppercase tracking-widest text-blue-700">
-        {label}{required && <span className="text-red-500 ml-1">*</span>}
-      </label>
-      <textarea
-        {...props}
-        rows={3}
-        className="rounded-lg border border-blue-200 bg-white/70 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition resize-none"
-      />
-    </div>
-  );
-}
-
-function Select({ label, required, options, ...props }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label className="text-xs font-semibold uppercase tracking-widest text-blue-700">
-        {label}{required && <span className="text-red-500 ml-1">*</span>}
-      </label>
-      <select
-        {...props}
-        className="rounded-lg border border-blue-200 bg-white/70 px-3 py-2 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
-      >
-        <option value="">— Seleccionar —</option>
-        {options.map(o => <option key={o} value={o}>{o}</option>)}
-      </select>
-    </div>
-  );
-}
-
-function Toggle({ label, description, checked, onChange }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className={`flex items-start gap-4 p-4 rounded-xl border-2 text-left transition-all duration-200 w-full ${
-        checked
-          ? "border-blue-500 bg-blue-50 shadow-md"
-          : "border-blue-100 bg-white/60 hover:border-blue-300"
-      }`}
-    >
-      <div className={`mt-0.5 h-5 w-10 flex-shrink-0 rounded-full transition-colors duration-200 relative ${checked ? "bg-blue-600" : "bg-slate-300"}`}>
-        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform duration-200 ${checked ? "translate-x-5" : "translate-x-0.5"}`} />
-      </div>
-      <div>
-        <p className="font-semibold text-slate-800 text-sm">{label}</p>
-        <p className="text-xs text-slate-500 mt-0.5">{description}</p>
-      </div>
-    </button>
-  );
-}
-
-// ─────────────────────────────────────────────
-//  PANTALLAS DE PASOS
-// ─────────────────────────────────────────────
-function Step1({ form, setForm, errors }) {
-  const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div className="sm:col-span-2">
-        <Input label="Nombre del Docente" required value={form.docente} onChange={f("docente")}
-          placeholder="Dr. Francisco De Jesús Luna Benítez" />
-        {errors.docente && <p className="text-red-500 text-xs mt-1">{errors.docente}</p>}
-      </div>
-      <div>
-        <Input label="Nombre de la Escuela" required value={form.escuela} onChange={f("escuela")}
-          placeholder="Ej. Primaria 'Benito Juárez'" />
-        {errors.escuela && <p className="text-red-500 text-xs mt-1">{errors.escuela}</p>}
-      </div>
-      <Input label="CCT" value={form.cct} onChange={f("cct")} placeholder="Ej. 13EPR0001A" />
-      <Input label="Municipio" required value={form.municipio} onChange={f("municipio")}
-        placeholder="Ej. Pachuca de Soto" />
-      {errors.municipio && <p className="text-red-500 text-xs mt-1">{errors.municipio}</p>}
-      <Input label="Estado" required value={form.estado} onChange={f("estado")}
-        placeholder="Ej. Hidalgo" />
-      {errors.estado && <p className="text-red-500 text-xs mt-1">{errors.estado}</p>}
-    </div>
-  );
-}
-
-function Step2({ form, setForm, errors }) {
-  const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <Select label="Nivel Educativo" required options={["Preescolar","Primaria","Secundaria","Media Superior"]}
-        value={form.nivel} onChange={f("nivel")} />
-      {errors.nivel && <p className="text-red-500 text-xs mt-1">{errors.nivel}</p>}
-      <Select label="Grado" required
-        options={["1°","2°","3°","4°","5°","6°"]}
-        value={form.grado} onChange={f("grado")} />
-      {errors.grado && <p className="text-red-500 text-xs mt-1">{errors.grado}</p>}
-      <Input label="Disciplina / Asignatura" required value={form.disciplina} onChange={f("disciplina")}
-        placeholder="Ej. Matemáticas, Español, Ciencias..." />
-      {errors.disciplina && <p className="text-red-500 text-xs mt-1">{errors.disciplina}</p>}
-      <Input label="No. de Alumnos en el Grupo" value={form.grupoAlumnos} onChange={f("grupoAlumnos")}
-        type="number" min="1" placeholder="30" />
-      <div className="sm:col-span-2">
-        <Textarea label="Problemática o Situación del Contexto" required
-          value={form.problematica} onChange={f("problematica")}
-          placeholder="Describe la problemática real o situación del entorno que motivará el aprendizaje..." />
-        {errors.problematica && <p className="text-red-500 text-xs mt-1">{errors.problematica}</p>}
-      </div>
-    </div>
-  );
-}
-
-function Step3({ form, setForm, errors }) {
-  const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
-  return (
-    <div className="flex flex-col gap-4">
-      <Select label="Campo Formativo" required options={CAMPOS}
-        value={form.campo} onChange={f("campo")} />
-      {errors.campo && <p className="text-red-500 text-xs mt-1">{errors.campo}</p>}
-      <Input label="Eje Articulador" required value={form.eje} onChange={f("eje")}
-        placeholder="Ej. Pensamiento crítico, Interculturalidad crítica..." />
-      {errors.eje && <p className="text-red-500 text-xs mt-1">{errors.eje}</p>}
-      <Textarea label="Contenido" required value={form.contenido} onChange={f("contenido")}
-        placeholder="Describe el contenido temático a abordar..." />
-      {errors.contenido && <p className="text-red-500 text-xs mt-1">{errors.contenido}</p>}
-      <Textarea label="Proceso de Desarrollo del Aprendizaje (PDA)" required value={form.pda} onChange={f("pda")}
-        placeholder="Ej. Reconoce y aplica fracciones en situaciones de la vida cotidiana..." />
-      {errors.pda && <p className="text-red-500 text-xs mt-1">{errors.pda}</p>}
-    </div>
-  );
-}
-
-function Step4({ form, setForm, errors }) {
-  const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
-  return (
-    <div className="flex flex-col gap-4">
-      <Select label="Metodología Didáctica" required options={METODOLOGIAS}
-        value={form.metodologia} onChange={f("metodologia")} />
-      {errors.metodologia && <p className="text-red-500 text-xs mt-1">{errors.metodologia}</p>}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-semibold uppercase tracking-widest text-blue-700">
-            Número de Sesiones <span className="text-red-500">*</span>
-          </label>
-          <input type="number" min="1" max="20" value={form.sesiones} onChange={f("sesiones")}
-            className="rounded-lg border border-blue-200 bg-white/70 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition" />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-semibold uppercase tracking-widest text-blue-700">Duración (min/sesión)</label>
-          <input type="number" min="20" max="120" step="5" value={form.duracion} onChange={f("duracion")}
-            className="rounded-lg border border-blue-200 bg-white/70 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition" />
-        </div>
-      </div>
-      <Textarea label="Materiales y Recursos" required value={form.materiales} onChange={f("materiales")}
-        placeholder="Lista los materiales, libros, herramientas digitales o recursos que se utilizarán..." />
-      {errors.materiales && <p className="text-red-500 text-xs mt-1">{errors.materiales}</p>}
-    </div>
-  );
-}
-
-function Step5({ form, setForm }) {
-  const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
-  const toggle = (k) => (v) => setForm(p => ({ ...p, [k]: v }));
-  return (
-    <div className="flex flex-col gap-4">
-      <Toggle
-        label="🎮 Incorporar Gamificación"
-        description="Añade puntos, insignias y retos para aumentar la motivación del alumnado."
-        checked={form.gamificacion}
-        onChange={toggle("gamificacion")}
-      />
-      <Toggle
-        label="♻️ Enfoque de Sustentabilidad / Reciclaje"
-        description="Usa materiales reciclados y vincula la actividad con la educación ambiental."
-        checked={form.reciclaje}
-        onChange={toggle("reciclaje")}
-      />
-      <Textarea label="Notas adicionales / Adecuaciones curriculares"
-        value={form.notasExtra} onChange={f("notasExtra")}
-        placeholder="Alumnos con NEE, adecuaciones de acceso o curriculares, contexto especial..." />
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────
-//  VALIDACIÓN POR PASO
-// ─────────────────────────────────────────────
-function validateStep(step, form) {
-  const err = {};
-  if (step === 1) {
-    if (!form.docente.trim())   err.docente   = "El nombre del docente es obligatorio.";
-    if (!form.escuela.trim())   err.escuela   = "El nombre de la escuela es obligatorio.";
-    if (!form.municipio.trim()) err.municipio = "El municipio es obligatorio.";
-    if (!form.estado.trim())    err.estado    = "El estado es obligatorio.";
-  }
-  if (step === 2) {
-    if (!form.nivel)             err.nivel      = "Selecciona el nivel educativo.";
-    if (!form.grado)             err.grado      = "Selecciona el grado.";
-    if (!form.disciplina.trim()) err.disciplina = "La disciplina es obligatoria.";
-    if (!form.problematica.trim()) err.problematica = "Describe la problemática del contexto.";
-  }
-  if (step === 3) {
-    if (!form.campo)            err.campo    = "Selecciona el campo formativo.";
-    if (!form.eje.trim())       err.eje      = "El eje articulador es obligatorio.";
-    if (!form.contenido.trim()) err.contenido = "El contenido es obligatorio.";
-    if (!form.pda.trim())       err.pda      = "El PDA es obligatorio.";
-  }
-  if (step === 4) {
-    if (!form.metodologia)       err.metodologia = "Selecciona una metodología.";
-    if (!form.materiales.trim()) err.materiales  = "Lista los materiales y recursos.";
-  }
-  return err;
-}
-
-// ─────────────────────────────────────────────
-//  APP PRINCIPAL
-// ─────────────────────────────────────────────
-export default function AsistenteNEM() {
-  const [step, setStep]           = useState(1);
-  const [form, setForm]           = useState(initialForm);
-  const [errors, setErrors]       = useState({});
-  const [loading, setLoading]     = useState(false);
-  const [result, setResult]       = useState("");
-  const [copied, setCopied]       = useState(false);
-
-  const goNext = () => {
-    const err = validateStep(step, form);
-    if (Object.keys(err).length > 0) { setErrors(err); return; }
-    setErrors({});
-    setStep(s => s + 1);
-  };
-
-  const goBack = () => { setErrors({}); setStep(s => s - 1); };
-
-  const handleGenerate = async () => {
-    setLoading(true);
-    setResult("");
-
-    const API_KEY = "AIzaSyDDlKteBds31I6kFFhPixu9x0CC5UQEGMg";
-
-    import { useState, useCallback } from "react";
-
-// Configuración de Pasos y Opciones
-const STEPS = [
-  { id: 1, label: "Datos", icon: "👤" },
-  { id: 2, label: "Contexto", icon: "🏫" },
-  { id: 3, label: "Currícula", icon: "📚" },
-  { id: 4, label: "Estrategia", icon: "🎯" },
-  { id: 5, label: "Extras", icon: "✨" },
-];
-
-const initialForm = {
-  docente: "", escuela: "", cct: "", municipio: "", estado: "",
-  grado: "", nivel: "", disciplina: "", grupoAlumnos: "", problematica: "",
+  docente: "Dr. Francisco De Jesús Luna Benítez", escuela: "", cct: "", municipio: "", estado: "Tlaxcala",
+  grado: "", nivel: "", disciplina: "", problematica: "",
   campo: "", eje: "", contenido: "", pda: "",
   metodologia: "", sesiones: "3", duracion: "50", materiales: "",
   gamificacion: false, reciclaje: false, notasExtra: "",
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  COMPONENTES DE APOYO
+// ─────────────────────────────────────────────────────────────────────────────
+const InputGroup = ({ label, help, children }) => (
+  <div className="flex flex-col gap-1 mb-5">
+    <label className="text-sm font-bold text-slate-700 flex justify-between">
+      {label}
+      {help && <span className="text-[10px] text-blue-500 font-medium italic">{help}</span>}
+    </label>
+    {children}
+  </div>
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  APLICACIÓN PRINCIPAL
+// ─────────────────────────────────────────────────────────────────────────────
 export default function AsistenteNEM() {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const updateForm = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
 
   const handleGenerate = async () => {
     setLoading(true);
     setResult("");
     const API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
 
-    // SU PROMPT ORIGINAL INTEGRADO TOTALMENTE
     const prompt = `
-    Eres un experto en diseño curricular de la Nueva Escuela Mexicana (NEM) de México.
-    Genera una planeación didáctica completa, coherente y lista para usar en el aula, con base en los siguientes datos:
+      Eres un experto en la Nueva Escuela Mexicana (NEM). Genera una planeación didáctica de alto nivel.
+      DATOS: Docente: ${form.docente} | Escuela: ${form.escuela} | CCT: ${form.cct}
+      Nivel: ${form.nivel} | Grado: ${form.grado} | Disciplina: ${form.disciplina}
+      Problemática: ${form.problematica} | Campo: ${form.campo} | Eje: ${form.eje}
+      Contenido: ${form.contenido} | PDA: ${form.pda} | Metodología: ${form.metodologia}
+      Sesiones: ${form.sesiones} | Gamificación: ${form.gamificacion ? "SÍ" : "NO"} | Reciclaje: ${form.reciclaje ? "SÍ" : "NO"}
 
-    DOCENTE: ${form.docente}
-    ESCUELA: ${form.escuela} | CCT: ${form.cct}
-    UBICACIÓN: ${form.municipio}, ${form.estado}
-    NIVEL: ${form.nivel} | GRADO: ${form.grado}
-    DISCIPLINA: ${form.disciplina}
-    ALUMNOS EN EL GRUPO: ${form.grupoAlumnos || "No especificado"}
-
-    PROBLEMÁTICA CONTEXTUAL:
-    ${form.problematica}
-
-    CAMPO FORMATIVO: ${form.campo}
-    EJE ARTICULADOR: ${form.eje}
-    CONTENIDO: ${form.contenido}
-    PDA (Proceso de Desarrollo del Aprendizaje): ${form.pda}
-
-    METODOLOGÍA: ${form.metodologia}
-    NÚMERO DE SESIONES: ${form.sesiones}
-    DURACIÓN POR SESIÓN: ${form.duracion} minutos
-    MATERIALES: ${form.materiales}
-
-    GAMIFICACIÓN: ${form.gamificacion ? "Sí, incluir estrategia de gamificación (puntos, insignias, retos)" : "No"}
-    SUSTENTABILIDAD/RECICLAJE: ${form.reciclaje ? "Sí, incorporar enfoque de reciclaje y materiales sustentables" : "No"}
-    NOTAS ADICIONALES: ${form.notasExtra || "Ninguna"}
-
-    Genera la planeación con las siguientes secciones claramente diferenciadas:
-    1. Encabezado con todos los datos institucionales
-    2. Intención didáctica
-    3. Aprendizajes esperados (basados en el PDA)
-    4. Secuencia didáctica detallada (inicio, desarrollo y cierre) para CADA sesión
-    5. Materiales y recursos
-    6. Estrategia de evaluación (diagnóstica, formativa y sumativa) con criterios
-    7. Adecuaciones curriculares si aplica
-    ${form.gamificacion ? "8. Estrategia de gamificación detallada" : ""}
-    ${form.reciclaje ? "9. Vinculación con educación ambiental y uso de materiales reciclados" : ""}
-
-    Usa lenguaje pedagógico profesional, alineado al enfoque humanista y comunitario de la NEM.
-    Estructura la respuesta con encabezados claros usando ═, ─ y • para que sea fácil de leer.
-    `.trim();
+      INSTRUCCIONES: 
+      - Usa tablas Markdown para el encabezado y la secuencia.
+      - Detalla Inicio, Desarrollo y Cierre por cada sesión.
+      - Incluye rúbrica de evaluación formativa.
+    `;
 
     try {
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -462,315 +88,179 @@ export default function AsistenteNEM() {
         }
       );
       const data = await res.json();
-      setResult(data.candidates?.[0]?.content?.parts?.[0]?.text || "Error al procesar.");
-    } catch (err) {
-      setResult("Error de conexión.");
+      setResult(data.candidates?.[0]?.content?.parts?.[0]?.text || "Error al generar contenido.");
+    } catch (e) {
+      setResult("Error de conexión con la API.");
     }
     setLoading(false);
   };
 
-  // Componentes de interfaz dentro del mismo archivo para facilidad
-  const InputField = ({ label, name, type = "text" }) => (
-    <div className="mb-4">
-      <label className="block text-sm font-bold text-gray-700 mb-1">{label}</label>
-      <input 
-        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
-        type={type} 
-        value={form[name]} 
-        onChange={(e) => setForm({...form, [name]: e.target.value})} 
-      />
-    </div>
-  );
+  const progress = ((step - 1) / (STEPS.length - 1)) * 100;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-8 font-sans text-gray-900">
-      <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden">
-        {/* Header Vistoso */}
-        <div className="bg-gradient-to-r from-blue-900 to-indigo-800 p-8 text-white">
-          <h1 className="text-3xl font-extrabold">Asistente Pedagógico NEM</h1>
-          <p className="opacity-80">Dr. Francisco De Jesús Luna Benítez • Innovación Educativa</p>
-        </div>
+    <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900 pb-20">
+      
+      {/* ESTILOS DE IMPRESIÓN DINÁMICOS */}
+      <style>{`
+        @media print {
+          .no-print, header, button, .stepper { display: none !important; }
+          .print-area { 
+            box-shadow: none !important; 
+            border: none !important; 
+            margin: 0 !important; 
+            padding: 0 !important; 
+            width: 100% !important;
+          }
+          body { background: white !important; }
+          .content-text { font-size: 11pt !important; color: black !important; }
+        }
+      `}</style>
 
-        <div className="p-8">
-          {!result ? (
-            <>
-              {/* Indicador de Pasos */}
-              <div className="flex justify-between mb-8">
-                {STEPS.map((s) => (
-                  <div key={s.id} className={`flex flex-col items-center ${step >= s.id ? 'text-blue-600' : 'text-gray-400'}`}>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold border-2 ${step >= s.id ? 'border-blue-600 bg-blue-50' : 'border-gray-200'}`}>
-                      {s.icon}
-                    </div>
-                    <span className="text-xs mt-1 font-medium">{s.label}</span>
+      {/* HEADER */}
+      <header className="bg-[#0f172a] p-10 text-white shadow-xl mb-8 no-print">
+        <div className="max-w-5xl mx-auto flex items-center gap-6">
+          <div className="bg-blue-600 p-4 rounded-2xl shadow-lg rotate-3"><span className="text-3xl">👨‍🏫</span></div>
+          <div>
+            <h1 className="text-3xl font-black">Asistente <span className="text-blue-400">NEM</span> v3.0</h1>
+            <p className="text-slate-400 text-sm">Innovación Educativa: {form.docente}</p>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-4">
+        {!result ? (
+          <div className="bg-white rounded-[2.5rem] shadow-xl border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-bottom-4">
+            
+            {/* STEPPER */}
+            <div className="bg-slate-50 p-8 border-b border-slate-100 stepper">
+              <div className="flex justify-between relative">
+                <div className="absolute top-1/2 w-full h-1 bg-slate-200 -translate-y-1/2"></div>
+                <div className="absolute top-1/2 h-1 bg-blue-500 -translate-y-1/2 transition-all duration-500" style={{ width: `${progress}%` }}></div>
+                {STEPS.map(s => (
+                  <div key={s.id} className={`z-10 w-10 h-10 rounded-xl flex items-center justify-center border-2 transition-all ${step >= s.id ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-white border-slate-200 text-slate-300'}`}>
+                    <span className="text-sm font-bold">{s.id}</span>
                   </div>
                 ))}
               </div>
+            </div>
 
-              {/* Formulario Dinámico */}
-              <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+            <div className="p-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {step === 1 && (
-                  <div className="grid md:grid-cols-2 gap-2">
-                    <InputField label="Docente" name="docente" />
-                    <InputField label="Escuela" name="escuela" />
-                    <InputField label="CCT" name="cct" />
-                    <InputField label="Municipio" name="municipio" />
-                  </div>
+                  <>
+                    <InputGroup label="Nombre del Docente"><input className="input-style" value={form.docente} onChange={e => updateForm("docente", e.target.value)} /></InputGroup>
+                    <InputGroup label="Nombre de la Escuela"><input className="input-style" value={form.escuela} placeholder="Ej. Secundaria General..." onChange={e => updateForm("escuela", e.target.value)} /></InputGroup>
+                    <InputGroup label="CCT"><input className="input-style" value={form.cct} placeholder="Ej. 29DST..." onChange={e => updateForm("cct", e.target.value)} /></InputGroup>
+                    <InputGroup label="Municipio"><input className="input-style" value={form.municipio} onChange={e => updateForm("municipio", e.target.value)} /></InputGroup>
+                  </>
                 )}
+
                 {step === 2 && (
-                  <div>
-                    <InputField label="Disciplina" name="disciplina" />
-                    <InputField label="Problemática Contextual" name="problematica" />
+                  <>
+                    <InputGroup label="Nivel Educativo">
+                      <select className="input-style" onChange={e => updateForm("nivel", e.target.value)}>
+                        <option value="">Seleccionar...</option>
+                        <option value="Primaria">Primaria</option>
+                        <option value="Secundaria">Secundaria</option>
+                      </select>
+                    </InputGroup>
+                    <InputGroup label="Disciplina"><input className="input-style" placeholder="Ej. Informática" onChange={e => updateForm("disciplina", e.target.value)} /></InputGroup>
+                    <div className="md:col-span-2">
+                      <InputGroup label="Problemática Social/Escolar"><textarea className="input-style h-24" placeholder="Ej. Falta de cultura digital..." onChange={e => updateForm("problematica", e.target.value)} /></InputGroup>
+                    </div>
+                  </>
+                )}
+
+                {step === 3 && (
+                  <>
+                    <InputGroup label="Campo Formativo">
+                      <select className="input-style" onChange={e => updateForm("campo", e.target.value)}>
+                        <option value="">Seleccionar...</option>
+                        {CAMPOS.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </InputGroup>
+                    <InputGroup label="Eje Articulador"><input className="input-style" placeholder="Ej. Pensamiento Crítico" onChange={e => updateForm("eje", e.target.value)} /></InputGroup>
+                    <div className="md:col-span-2">
+                      <InputGroup label="PDA (Proceso de Desarrollo)"><textarea className="input-style h-24" onChange={e => updateForm("pda", e.target.value)} /></InputGroup>
+                    </div>
+                  </>
+                )}
+
+                {step === 4 && (
+                  <>
+                    <InputGroup label="Metodología Sugerida">
+                      <select className="input-style" onChange={e => updateForm("metodologia", e.target.value)}>
+                        <option value="">Seleccionar...</option>
+                        {METODOLOGIAS.map(m => <option key={m} value={m}>{m}</option>)}
+                      </select>
+                    </InputGroup>
+                    <InputGroup label="Número de Sesiones"><input type="number" className="input-style" value={form.sesiones} onChange={e => updateForm("sesiones", e.target.value)} /></InputGroup>
+                  </>
+                )}
+
+                {step === 5 && (
+                  <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                    <div className={`p-6 rounded-3xl border-4 cursor-pointer transition-all ${form.gamificacion ? 'border-blue-500 bg-blue-50' : 'border-slate-100 bg-slate-50'}`} onClick={() => updateForm("gamificacion", !form.gamificacion)}>
+                      <span className="text-2xl block mb-2">🎮</span>
+                      <p className="font-bold">¿Gamificar?</p>
+                    </div>
+                    <div className={`p-6 rounded-3xl border-4 cursor-pointer transition-all ${form.reciclaje ? 'border-green-500 bg-green-50' : 'border-slate-100 bg-slate-50'}`} onClick={() => updateForm("reciclaje", !form.reciclaje)}>
+                      <span className="text-2xl block mb-2">♻️</span>
+                      <p className="font-bold">¿Reciclaje?</p>
+                    </div>
                   </div>
                 )}
-                {/* ... (Se pueden añadir los demás campos de forma similar) */}
-                <p className="text-gray-500 text-sm italic">Completa los campos para avanzar al diseño curricular...</p>
               </div>
 
-              <div className="mt-8 flex justify-between">
-                <button 
-                  onClick={() => setStep(s => s - 1)} 
-                  disabled={step === 1}
-                  className="px-6 py-2 font-bold text-gray-500 disabled:opacity-0"
-                > Anterior </button>
+              <div className="mt-10 flex justify-between">
+                <button onClick={() => setStep(s => s - 1)} disabled={step === 1} className="px-6 py-3 font-bold text-slate-400 disabled:opacity-0">Atrás</button>
                 {step < 5 ? (
-                  <button onClick={() => setStep(step + 1)} className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition"> Siguiente </button>
+                  <button onClick={() => setStep(s => s + 1)} className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-bold shadow-lg shadow-blue-200">Continuar</button>
                 ) : (
-                  <button onClick={handleGenerate} disabled={loading} className="bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-emerald-600 transition">
-                    {loading ? "Generando con IA..." : "¡Crear Planeación!"}
+                  <button onClick={handleGenerate} disabled={loading} className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-bold shadow-xl">
+                    {loading ? "Generando..." : "🚀 Crear Planeación"}
                   </button>
                 )}
               </div>
-            </>
-          ) : (
-            /* Pantalla de Resultados */
-            <div className="animate-fade-in">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">Planeación Propuesta</h2>
-                <button onClick={() => setResult("")} className="text-blue-600 font-bold hover:underline">Nueva Planeación</button>
-              </div>
-              <div className="bg-gray-50 p-8 rounded-3xl border-2 border-dashed border-gray-200 font-mono text-sm leading-relaxed whitespace-pre-wrap shadow-inner overflow-auto max-h-[500px]">
-                {result}
-              </div>
-              <div className="mt-6 flex gap-4">
-                <button onClick={() => window.print()} className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold hover:bg-black transition">Imprimir / Guardar PDF</button>
-                <button onClick={() => navigator.clipboard.writeText(result)} className="flex-1 border-2 border-gray-800 py-3 rounded-xl font-bold hover:bg-gray-100 transition">Copiar Texto</button>
-              </div>
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        ) : (
+          /* RESULTADO */
+          <div className="bg-white rounded-[2.5rem] shadow-2xl p-10 border border-slate-100 print-area animate-in zoom-in-95 duration-500">
+            <div className="flex justify-between items-center mb-8 no-print">
+              <h2 className="text-2xl font-black">Planeación Generada</h2>
+              <button onClick={() => setResult("")} className="text-blue-600 font-bold">Nueva</button>
+            </div>
+            
+            <div className="content-text font-serif bg-slate-50 p-8 rounded-3xl border border-slate-100 whitespace-pre-wrap leading-relaxed shadow-inner overflow-auto max-h-[60vh]">
+              {result}
+            </div>
+
+            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 no-print">
+              <button onClick={() => window.print()} className="bg-slate-900 text-white py-5 rounded-2xl font-bold hover:scale-[1.02] transition-transform">🖨️ Guardar en PDF</button>
+              <button onClick={() => {navigator.clipboard.writeText(result); setCopied(true); setTimeout(()=>setCopied(false), 2000)}} className="bg-blue-600 text-white py-5 rounded-2xl font-bold">
+                {copied ? "✅ Copiado" : "📋 Copiar Texto"}
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
+
+      <style>{`
+        .input-style {
+          width: 100%;
+          padding: 1rem;
+          border-radius: 1rem;
+          border: 1px solid #e2e8f0;
+          background: #f8fafc;
+          outline: none;
+          transition: all 0.2s;
+        }
+        .input-style:focus {
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 4px #dbeafe;
+        }
+      `}</style>
     </div>
   );
-}
-
-    try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-3-flash-preview:generateContent?key=${API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
-          })
-        }
-      );
-      const data = await res.json();
-      const output = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (output) {
-        setResult(output);
-      } else {
-        setResult("⚠️ No se recibió respuesta de Gemini. Verifica tu API Key o intenta de nuevo.\n\nDetalle: " + JSON.stringify(data, null, 2));
-      }
-    } catch (err) {
-      setResult("❌ Error al conectar con Gemini:\n" + err.message);
-    }
-
-    setLoading(false);
-  };
-
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(result).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    });
-  }, [result]);
-
-  const progress = ((step - 1) / (STEPS.length - 1)) * 100;
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-sky-100 font-sans">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-blue-800 via-blue-700 to-sky-600 shadow-xl">
-        <div className="max-w-3xl mx-auto px-4 py-5 flex items-center gap-4">
-          <div className="flex-shrink-0 bg-white/20 rounded-xl p-2.5">
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-              <rect x="2" y="2" width="28" height="28" rx="6" fill="white" fillOpacity="0.15"/>
-              <path d="M8 22 L16 8 L24 22" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M11 18 h10" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-white font-bold text-xl leading-tight tracking-tight">
-              Asistente Pedagógico NEM
-            </h1>
-            <p className="text-blue-200 text-xs mt-0.5">
-              Dr. Francisco De Jesús Luna Benítez • Nueva Escuela Mexicana
-            </p>
-          </div>
-          <div className="ml-auto hidden sm:flex items-center gap-1 bg-white/10 rounded-full px-3 py-1">
-            <span className="text-blue-200 text-xs">SEP</span>
-            <span className="text-white/40 text-xs">·</span>
-            <span className="text-blue-200 text-xs">NEM 2025</span>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-3xl mx-auto px-4 py-8">
-        {/* Stepper */}
-        {!result && (
-          <div className="mb-8">
-            {/* Barra de progreso */}
-            <div className="relative h-1.5 bg-blue-100 rounded-full mb-5 overflow-hidden">
-              <div
-                className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-600 to-sky-400 rounded-full transition-all duration-500"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            {/* Pasos */}
-            <div className="flex justify-between">
-              {STEPS.map(s => (
-                <div key={s.id} className="flex flex-col items-center gap-1">
-                  <button
-                    onClick={() => s.id < step && setStep(s.id)}
-                    className={`w-9 h-9 rounded-full border-2 text-sm flex items-center justify-center transition-all duration-200 font-bold
-                      ${step === s.id
-                        ? "bg-blue-700 border-blue-700 text-white shadow-lg scale-110"
-                        : s.id < step
-                        ? "bg-blue-100 border-blue-500 text-blue-700 cursor-pointer hover:scale-105"
-                        : "bg-white border-blue-100 text-slate-300 cursor-default"
-                      }`}
-                  >
-                    {s.id < step ? "✓" : s.icon}
-                  </button>
-                  <span className={`text-xs text-center leading-tight max-w-[60px] hidden sm:block
-                    ${step === s.id ? "text-blue-700 font-semibold" : "text-slate-400"}`}>
-                    {s.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Tarjeta del formulario */}
-        {!result ? (
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-700 to-sky-500 px-6 py-4 flex items-center gap-3">
-              <span className="text-2xl">{STEPS[step-1].icon}</span>
-              <div>
-                <p className="text-blue-200 text-xs uppercase tracking-widest">Paso {step} de {STEPS.length}</p>
-                <h2 className="text-white font-bold text-lg leading-tight">{STEPS[step-1].label}</h2>
-              </div>
-            </div>
-
-            <div className="p-6">
-              {step === 1 && <Step1 form={form} setForm={setForm} errors={errors} />}
-              {step === 2 && <Step2 form={form} setForm={setForm} errors={errors} />}
-              {step === 3 && <Step3 form={form} setForm={setForm} errors={errors} />}
-              {step === 4 && <Step4 form={form} setForm={setForm} errors={errors} />}
-              {step === 5 && <Step5 form={form} setForm={setForm} />}
-            </div>
-
-            {/* Navegación */}
-            <div className="px-6 pb-6 flex justify-between items-center gap-3">
-              <button
-                onClick={goBack}
-                disabled={step === 1}
-                className="px-5 py-2.5 rounded-xl border-2 border-blue-200 text-blue-700 text-sm font-semibold disabled:opacity-30 hover:bg-blue-50 transition-all"
-              >
-                ← Anterior
-              </button>
-
-              {step < 5 ? (
-                <button
-                  onClick={goNext}
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-700 to-sky-500 text-white text-sm font-bold shadow-md hover:shadow-lg hover:scale-105 transition-all active:scale-95"
-                >
-                  Siguiente →
-                </button>
-              ) : (
-                <button
-                  onClick={handleGenerate}
-                  disabled={loading}
-                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 text-white text-sm font-bold shadow-md hover:shadow-lg hover:scale-105 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {loading ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                      </svg>
-                      Generando planeación…
-                    </>
-                  ) : (
-                    <>✨ Generar Planeación con IA</>
-                  )}
-                </button>
-              )}
-            </div>
-          </div>
-        ) : (
-          /* ── RESULTADO ── */
-          <div className="flex flex-col gap-4">
-            {/* Encabezado resultado */}
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-500 rounded-2xl shadow-xl px-6 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">📄</span>
-                <div>
-                  <p className="text-emerald-100 text-xs uppercase tracking-widest">Listo</p>
-                  <h2 className="text-white font-bold text-lg">Planeación Generada</h2>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleCopy}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                    copied
-                      ? "bg-white text-emerald-700"
-                      : "bg-white/20 text-white hover:bg-white/30"
-                  }`}
-                >
-                  {copied ? "✓ Copiado" : "📋 Copiar"}
-                </button>
-                <button
-                  onClick={() => { setResult(""); setStep(1); setForm(initialForm); }}
-                  className="px-4 py-2 rounded-xl bg-white/20 text-white text-sm font-semibold hover:bg-white/30 transition-all"
-                >
-                  Nueva
-                </button>
-              </div>
-            </div>
-
-            {/* Texto de la planeación */}
-            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-              <div className="bg-slate-800 px-4 py-2 flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-red-400"/>
-                <span className="w-3 h-3 rounded-full bg-yellow-400"/>
-                <span className="w-3 h-3 rounded-full bg-green-400"/>
-                <span className="text-slate-400 text-xs ml-2 font-mono">planeacion_nem.txt</span>
-              </div>
-              <pre className="p-6 text-sm text-slate-800 font-mono leading-relaxed whitespace-pre-wrap overflow-auto max-h-[65vh]">
-                {result}
-              </pre>
-            </div>
-
-            <p className="text-center text-xs text-slate-400">
-              ⚠️ Este documento es un apoyo pedagógico generado con IA. Revísalo y adáptalo antes de aplicarlo.
-            </p>
-          </div>
-        )}
-      </main>
-    </div>
-  );
 }
