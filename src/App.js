@@ -641,7 +641,7 @@ export default function AsistenteNEM() {
     let i=0;
     const iv = setInterval(()=>{i=(i+1)%LOAD_MSGS.length;setLoadMsg(LOAD_MSGS[i]);},2200);
 
-    const API_KEY = "AIzaSyDDlKteBds31I6kFFhPixu9x0CC5UQEGMg";
+    const API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
     try {
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${API_KEY}`,
