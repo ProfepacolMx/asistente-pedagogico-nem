@@ -378,48 +378,190 @@ export default function AsistenteNEM() {
 
     const API_KEY = "AIzaSyDDlKteBds31I6kFFhPixu9x0CC5UQEGMg";
 
-    const prompt = `
-Eres un experto en diseño curricular de la Nueva Escuela Mexicana (NEM) de México.
-Genera una planeación didáctica completa, coherente y lista para usar en el aula, con base en los siguientes datos:
+    import { useState, useCallback } from "react";
 
-DOCENTE: ${form.docente}
-ESCUELA: ${form.escuela} | CCT: ${form.cct}
-UBICACIÓN: ${form.municipio}, ${form.estado}
-NIVEL: ${form.nivel} | GRADO: ${form.grado}
-DISCIPLINA: ${form.disciplina}
-ALUMNOS EN EL GRUPO: ${form.grupoAlumnos || "No especificado"}
+// Configuración de Pasos y Opciones
+const STEPS = [
+  { id: 1, label: "Datos", icon: "👤" },
+  { id: 2, label: "Contexto", icon: "🏫" },
+  { id: 3, label: "Currícula", icon: "📚" },
+  { id: 4, label: "Estrategia", icon: "🎯" },
+  { id: 5, label: "Extras", icon: "✨" },
+];
 
-PROBLEMÁTICA CONTEXTUAL:
-${form.problematica}
+const initialForm = {
+  docente: "", escuela: "", cct: "", municipio: "", estado: "",
+  grado: "", nivel: "", disciplina: "", grupoAlumnos: "", problematica: "",
+  campo: "", eje: "", contenido: "", pda: "",
+  metodologia: "", sesiones: "3", duracion: "50", materiales: "",
+  gamificacion: false, reciclaje: false, notasExtra: "",
+};
 
-CAMPO FORMATIVO: ${form.campo}
-EJE ARTICULADOR: ${form.eje}
-CONTENIDO: ${form.contenido}
-PDA (Proceso de Desarrollo del Aprendizaje): ${form.pda}
+export default function AsistenteNEM() {
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState(initialForm);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState("");
 
-METODOLOGÍA: ${form.metodologia}
-NÚMERO DE SESIONES: ${form.sesiones}
-DURACIÓN POR SESIÓN: ${form.duracion} minutos
-MATERIALES: ${form.materiales}
+  const handleGenerate = async () => {
+    setLoading(true);
+    setResult("");
+    const API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
 
-GAMIFICACIÓN: ${form.gamificacion ? "Sí, incluir estrategia de gamificación (puntos, insignias, retos)" : "No"}
-SUSTENTABILIDAD/RECICLAJE: ${form.reciclaje ? "Sí, incorporar enfoque de reciclaje y materiales sustentables" : "No"}
-NOTAS ADICIONALES: ${form.notasExtra || "Ninguna"}
+    // SU PROMPT ORIGINAL INTEGRADO TOTALMENTE
+    const prompt = `
+    Eres un experto en diseño curricular de la Nueva Escuela Mexicana (NEM) de México.
+    Genera una planeación didáctica completa, coherente y lista para usar en el aula, con base en los siguientes datos:
 
-Genera la planeación con las siguientes secciones claramente diferenciadas:
-1. Encabezado con todos los datos institucionales
-2. Intención didáctica
-3. Aprendizajes esperados (basados en el PDA)
-4. Secuencia didáctica detallada (inicio, desarrollo y cierre) para CADA sesión
-5. Materiales y recursos
-6. Estrategia de evaluación (diagnóstica, formativa y sumativa) con criterios
-7. Adecuaciones curriculares si aplica
-${form.gamificacion ? "8. Estrategia de gamificación detallada" : ""}
-${form.reciclaje ? "9. Vinculación con educación ambiental y uso de materiales reciclados" : ""}
+    DOCENTE: ${form.docente}
+    ESCUELA: ${form.escuela} | CCT: ${form.cct}
+    UBICACIÓN: ${form.municipio}, ${form.estado}
+    NIVEL: ${form.nivel} | GRADO: ${form.grado}
+    DISCIPLINA: ${form.disciplina}
+    ALUMNOS EN EL GRUPO: ${form.grupoAlumnos || "No especificado"}
 
-Usa lenguaje pedagógico profesional, alineado al enfoque humanista y comunitario de la NEM.
-Estructura la respuesta con encabezados claros usando ═, ─ y • para que sea fácil de leer.
-    `.trim();
+    PROBLEMÁTICA CONTEXTUAL:
+    ${form.problematica}
+
+    CAMPO FORMATIVO: ${form.campo}
+    EJE ARTICULADOR: ${form.eje}
+    CONTENIDO: ${form.contenido}
+    PDA (Proceso de Desarrollo del Aprendizaje): ${form.pda}
+
+    METODOLOGÍA: ${form.metodologia}
+    NÚMERO DE SESIONES: ${form.sesiones}
+    DURACIÓN POR SESIÓN: ${form.duracion} minutos
+    MATERIALES: ${form.materiales}
+
+    GAMIFICACIÓN: ${form.gamificacion ? "Sí, incluir estrategia de gamificación (puntos, insignias, retos)" : "No"}
+    SUSTENTABILIDAD/RECICLAJE: ${form.reciclaje ? "Sí, incorporar enfoque de reciclaje y materiales sustentables" : "No"}
+    NOTAS ADICIONALES: ${form.notasExtra || "Ninguna"}
+
+    Genera la planeación con las siguientes secciones claramente diferenciadas:
+    1. Encabezado con todos los datos institucionales
+    2. Intención didáctica
+    3. Aprendizajes esperados (basados en el PDA)
+    4. Secuencia didáctica detallada (inicio, desarrollo y cierre) para CADA sesión
+    5. Materiales y recursos
+    6. Estrategia de evaluación (diagnóstica, formativa y sumativa) con criterios
+    7. Adecuaciones curriculares si aplica
+    ${form.gamificacion ? "8. Estrategia de gamificación detallada" : ""}
+    ${form.reciclaje ? "9. Vinculación con educación ambiental y uso de materiales reciclados" : ""}
+
+    Usa lenguaje pedagógico profesional, alineado al enfoque humanista y comunitario de la NEM.
+    Estructura la respuesta con encabezados claros usando ═, ─ y • para que sea fácil de leer.
+    `.trim();
+
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        }
+      );
+      const data = await res.json();
+      setResult(data.candidates?.[0]?.content?.parts?.[0]?.text || "Error al procesar.");
+    } catch (err) {
+      setResult("Error de conexión.");
+    }
+    setLoading(false);
+  };
+
+  // Componentes de interfaz dentro del mismo archivo para facilidad
+  const InputField = ({ label, name, type = "text" }) => (
+    <div className="mb-4">
+      <label className="block text-sm font-bold text-gray-700 mb-1">{label}</label>
+      <input 
+        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+        type={type} 
+        value={form[name]} 
+        onChange={(e) => setForm({...form, [name]: e.target.value})} 
+      />
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-4 md:p-8 font-sans text-gray-900">
+      <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden">
+        {/* Header Vistoso */}
+        <div className="bg-gradient-to-r from-blue-900 to-indigo-800 p-8 text-white">
+          <h1 className="text-3xl font-extrabold">Asistente Pedagógico NEM</h1>
+          <p className="opacity-80">Dr. Francisco De Jesús Luna Benítez • Innovación Educativa</p>
+        </div>
+
+        <div className="p-8">
+          {!result ? (
+            <>
+              {/* Indicador de Pasos */}
+              <div className="flex justify-between mb-8">
+                {STEPS.map((s) => (
+                  <div key={s.id} className={`flex flex-col items-center ${step >= s.id ? 'text-blue-600' : 'text-gray-400'}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold border-2 ${step >= s.id ? 'border-blue-600 bg-blue-50' : 'border-gray-200'}`}>
+                      {s.icon}
+                    </div>
+                    <span className="text-xs mt-1 font-medium">{s.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Formulario Dinámico */}
+              <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                {step === 1 && (
+                  <div className="grid md:grid-cols-2 gap-2">
+                    <InputField label="Docente" name="docente" />
+                    <InputField label="Escuela" name="escuela" />
+                    <InputField label="CCT" name="cct" />
+                    <InputField label="Municipio" name="municipio" />
+                  </div>
+                )}
+                {step === 2 && (
+                  <div>
+                    <InputField label="Disciplina" name="disciplina" />
+                    <InputField label="Problemática Contextual" name="problematica" />
+                  </div>
+                )}
+                {/* ... (Se pueden añadir los demás campos de forma similar) */}
+                <p className="text-gray-500 text-sm italic">Completa los campos para avanzar al diseño curricular...</p>
+              </div>
+
+              <div className="mt-8 flex justify-between">
+                <button 
+                  onClick={() => setStep(s => s - 1)} 
+                  disabled={step === 1}
+                  className="px-6 py-2 font-bold text-gray-500 disabled:opacity-0"
+                > Anterior </button>
+                {step < 5 ? (
+                  <button onClick={() => setStep(step + 1)} className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition"> Siguiente </button>
+                ) : (
+                  <button onClick={handleGenerate} disabled={loading} className="bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-emerald-600 transition">
+                    {loading ? "Generando con IA..." : "¡Crear Planeación!"}
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            /* Pantalla de Resultados */
+            <div className="animate-fade-in">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">Planeación Propuesta</h2>
+                <button onClick={() => setResult("")} className="text-blue-600 font-bold hover:underline">Nueva Planeación</button>
+              </div>
+              <div className="bg-gray-50 p-8 rounded-3xl border-2 border-dashed border-gray-200 font-mono text-sm leading-relaxed whitespace-pre-wrap shadow-inner overflow-auto max-h-[500px]">
+                {result}
+              </div>
+              <div className="mt-6 flex gap-4">
+                <button onClick={() => window.print()} className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold hover:bg-black transition">Imprimir / Guardar PDF</button>
+                <button onClick={() => navigator.clipboard.writeText(result)} className="flex-1 border-2 border-gray-800 py-3 rounded-xl font-bold hover:bg-gray-100 transition">Copiar Texto</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
     try {
       const res = await fetch(
