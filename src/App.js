@@ -295,72 +295,52 @@ Problemática: ${f.problematica}
 Gamificación: ${f.gamificacion?"SÍ":"NO"} | Sustentabilidad: ${f.reciclaje?"SÍ":"NO"}
 Notas: ${f.notasExtra||"Ninguna"}
 
-INSTRUCCIÓN CRÍTICA: Responde ÚNICAMENTE con JSON válido. Cero texto antes o después. Cero markdown. Cero backticks. Solo el objeto JSON.
+INSTRUCCIÓN CRÍTICA: Responde ÚNICAMENTE con JSON válido. Sin texto antes ni después. Sin backticks.
 
-REGLAS DE CONTENIDO POR SESIÓN (OBLIGATORIAS SIN EXCEPCIÓN):
-- inicio: MÍNIMO 300 palabras. Incluye: nombre de la actividad de apertura, instrucciones textuales paso a paso, EXACTAMENTE 5 preguntas detonadoras entrecomilladas y numeradas, descripción de cómo se activan saberes previos con un ejemplo real del tema, organización del espacio físico del aula.
-- desarrollo: MÍNIMO 500 palabras. Incluye: nombre de la estrategia central, instrucciones textuales que el docente puede leer directamente, MÍNIMO 3 ejemplos resueltos con números/datos reales del tema (no genéricos), descripción detallada de la dinámica por equipos o individual, roles específicos de cada integrante, cómo el docente circula y monitorea, preguntas de andamiaje que el docente hace durante el recorrido, producto intermedio que se genera.
-- cierre: MÍNIMO 200 palabras. Incluye: actividad de síntesis con instrucciones, EXACTAMENTE 3 preguntas metacognitivas entrecomilladas, descripción del producto/evidencia que queda de la sesión, instrucción de tarea o extensión con ejemplos concretos.
-- CADA SESIÓN debe tener contenido ÚNICO y DIFERENTE a las demás, mostrando progresión pedagógica clara.
-- descripcionCompleta: concatenación de inicio+desarrollo+cierre como texto corrido con subtítulos INICIO:, DESARROLLO:, CIERRE:
+REGLA CLAVE PARA "descripcion" DE CADA SESIÓN:
+Escribe un texto corrido con tres bloques marcados: INICIO: ... DESARROLLO: ... CIERRE: ...
+  INICIO — pasos numerados (1-4), 3 preguntas detonadoras entrecomilladas específicas del tema, ejemplo real para activar saberes previos.
+  DESARROLLO — instrucciones concretas del docente, 2 ejemplos completamente resueltos con datos/números/nombres REALES del tema, roles de equipos, 2 preguntas de andamiaje entrecomilladas, producto intermedio.
+  CIERRE — síntesis breve con instrucciones, 2 preguntas metacognitivas entrecomilladas, evidencia concreta que queda de la sesión.
+Cada sesión debe ser ÚNICA y mostrar progresión respecto a la anterior. NO uses genéricos.
 
 {
   "periodoAplicacion": "string",
-  "situacionProblema": "string (4-5 oraciones detalladas contextualizando la problemática)",
+  "situacionProblema": "2-3 oraciones contextualizando la problemática",
   "escenario": "Aula",
-  "nombreProyecto": "string (nombre creativo y pedagógico del proyecto)",
-  "producto": "string (descripción concreta y detallada del producto final que elaborarán los alumnos)",
-  "ejesSeleccionados": [números del 1 al 7 que aplican],
-  "contenido": "string (descripción extendida del contenido disciplinar, 4-6 oraciones con enfoque NEM)",
-  "pda": "string (PDA completo con interpretación pedagógica, 3-4 oraciones)",
-  "aprendizajesEsperados": [
-    "Cognitivo 1: texto detallado y medible",
-    "Cognitivo 2: texto detallado y medible",
-    "Cognitivo 3: texto detallado y medible",
-    "Procedimental 1: texto detallado y medible",
-    "Procedimental 2: texto detallado y medible",
-    "Actitudinal 1: texto detallado y medible",
-    "Actitudinal 2: texto detallado y medible"
-  ],
+  "nombreProyecto": "string creativo",
+  "producto": "producto final concreto que elaboran los alumnos",
+  "ejesSeleccionados": [1,2],
+  "contenido": "2-3 oraciones sobre el contenido disciplinar NEM",
+  "pda": "1-2 oraciones",
+  "aprendizajesEsperados": ["Cognitivo 1","Cognitivo 2","Cognitivo 3","Procedimental 1","Procedimental 2","Actitudinal 1"],
   "sesiones": [
     {
       "numero": 1,
       "tipo": "F1",
-      "titulo": "string (título creativo de la sesión)",
-      "inicio": "string — MÍNIMO 300 palabras. Actividad de apertura con nombre, instrucciones paso a paso, 5 preguntas detonadoras textuales numeradas y entrecomilladas, cómo se activan saberes previos con ejemplo real del tema, organización del aula",
-      "desarrollo": "string — MÍNIMO 500 palabras. Estrategia central con nombre, instrucciones textuales directas, 3 ejemplos resueltos con datos reales del tema, dinámica de equipos con roles, monitoreo docente, preguntas de andamiaje entrecomilladas, producto intermedio",
-      "cierre": "string — MÍNIMO 200 palabras. Actividad de síntesis con instrucciones, 3 preguntas metacognitivas entrecomilladas, evidencia que queda, tarea con ejemplo concreto",
-      "descripcionCompleta": "string — texto corrido: INICIO: [texto] DESARROLLO: [texto] CIERRE: [texto]",
-      "evaluacionFormativa": "MO, ES, E",
+      "titulo": "título creativo",
+      "descripcion": "INICIO: [pasos 1-4 + 3 preguntas detonadoras entre comillas + ejemplo real]. DESARROLLO: [instrucciones del docente + 2 ejemplos resueltos con datos reales del tema + roles + 2 preguntas de andamiaje entre comillas + producto]. CIERRE: [síntesis + 2 preguntas metacognitivas entre comillas + evidencia de la sesión].",
+      "evaluacionFormativa": "MO, E",
       "formaTrabajo": "string",
       "materiales": "string"
     }
   ],
   "evaluacion": {
-    "diagnostica": "string (instrumento completo con 5 preguntas o actividad concreta, instrucciones de aplicación e interpretación)",
-    "formativa": "string (3 instrumentos distintos con criterios detallados: lista de cotejo con 8 indicadores, escala estimativa con 4 niveles, diario reflexivo con preguntas)",
+    "diagnostica": "actividad diagnóstica con 3 preguntas concretas",
+    "formativa": "2 instrumentos con criterios breves",
     "rubrica": [
-      { "criterio":"string", "excelente":"string (descriptor específico de 2-3 oraciones)", "satisfactorio":"string (descriptor específico de 2-3 oraciones)", "enDesarrollo":"string (descriptor específico de 2-3 oraciones)", "insuficiente":"string (descriptor específico de 2-3 oraciones)" },
-      { "criterio":"string", "excelente":"string", "satisfactorio":"string", "enDesarrollo":"string", "insuficiente":"string" },
-      { "criterio":"string", "excelente":"string", "satisfactorio":"string", "enDesarrollo":"string", "insuficiente":"string" },
-      { "criterio":"string", "excelente":"string", "satisfactorio":"string", "enDesarrollo":"string", "insuficiente":"string" },
-      { "criterio":"string", "excelente":"string", "satisfactorio":"string", "enDesarrollo":"string", "insuficiente":"string" }
-    ],
-    "autoevaluacion": "string (5 afirmaciones con escala 1-4 para que el alumno valore su proceso)"
+      {"criterio":"string","excelente":"string","satisfactorio":"string","enDesarrollo":"string","insuficiente":"string"},
+      {"criterio":"string","excelente":"string","satisfactorio":"string","enDesarrollo":"string","insuficiente":"string"},
+      {"criterio":"string","excelente":"string","satisfactorio":"string","enDesarrollo":"string","insuficiente":"string"},
+      {"criterio":"string","excelente":"string","satisfactorio":"string","enDesarrollo":"string","insuficiente":"string"}
+    ]
   },
-  "fundamentacion": "string (5-6 oraciones citando Plan de Estudios 2022 SEP, NEM, autores como Freire, Vygotsky, Ausubel, Morin y el marco curricular aplicable)",
-  "gamificacion": ${f.gamificacion?`{
-    "sistema": "string (tabla detallada: qué acciones dan puntos, cuántos puntos, cómo se acumulan)",
-    "insignias": ["string insignia 1 con criterio","string insignia 2 con criterio","string insignia 3 con criterio","string insignia 4 con criterio","string insignia 5 con criterio","string insignia 6 con criterio"],
-    "retos": ["string reto 1 con instrucciones","string reto 2 con instrucciones","string reto 3 con instrucciones"],
-    "tablero": "string (descripción detallada de cómo se construye y actualiza el tablero en el aula)"
-  }`:"null"},
-  "sustentabilidad": ${f.reciclaje?`{
-    "materiales": "string (lista detallada de materiales reciclados, cómo conseguirlos y prepararlos)",
-    "actividad": "string (actividad completa de reflexión ambiental de 20 min integrada en la secuencia)",
-    "ods": "string (vinculación específica con al menos 2 ODS de la Agenda 2030 con ejemplos concretos)"
-  }`:"null"}
+  "fundamentacion": "2-3 oraciones citando NEM 2022, Freire, Vygotsky u otros",
+  "gamificacion": ${f.gamificacion?`{"sistema":"string","insignias":["ins1","ins2","ins3"],"retos":["reto1","reto2"]}`:"null"},
+  "sustentabilidad": ${f.reciclaje?`{"materiales":"string","actividad":"string","ods":"string"}`:"null"}
 }
+
+Genera EXACTAMENTE ${f.sesiones} sesiones. Tipos: 1-2="F1", 3-4="F2", últimas="EV".
 `.trim();
 }
 
@@ -456,7 +436,12 @@ function buildPdfHtml(form, plan){
 <tr class="sr">
   <td class="tn">${s.numero}</td>
   <td class="tt">${s.tipo||"F1"}</td>
-  <td class="td">${(s.descripcionCompleta||"").replace(/\n/g,"<br>")}</td>
+  <td class="td">${(s.descripcion || [s.inicio,s.desarrollo,s.cierre].filter(Boolean).join("\n\n") || s.descripcionCompleta || "")
+    .replace(/\n/g,"<br>")
+    .replace(/INICIO:/g,"<strong style=\'color:#5a9e44\'>▸ INICIO:</strong>")
+    .replace(/DESARROLLO:/g,"<strong style=\'color:#4472C4\'>▸ DESARROLLO:</strong>")
+    .replace(/CIERRE:/g,"<strong style=\'color:#7030A0\'>▸ CIERRE:</strong>")
+  }</td>
   <td class="te">${s.evaluacionFormativa||""}</td>
   <td class="tf">${s.formaTrabajo||""}</td>
   <td class="tm">${s.materiales||""}</td>
@@ -1099,6 +1084,19 @@ function ResultView({result,planData,form,onNew}){
         </div>
       </div>
 
+      {/* Warning when no structured data */}
+      {!hasPlan && (
+        <div style={{background:"#fef3c7",border:"1.5px solid #fbbf24",borderRadius:"0.75rem",
+          padding:"0.8rem 1rem",marginBottom:"0.8rem",display:"flex",alignItems:"center",gap:"0.75rem"}}>
+          <span style={{fontSize:"1.4rem"}}>⚠️</span>
+          <div>
+            <p style={{fontSize:"0.8rem",fontWeight:700,color:"#92400e",fontFamily:"'DM Sans',sans-serif"}}>El JSON no pudo ser procesado</p>
+            <p style={{fontSize:"0.7rem",color:"#78350f",fontFamily:"'DM Sans',sans-serif"}}>
+              El PDF y Word se exportarán sin contenido de sesiones. Intenta reducir el número de sesiones a 3-4, o vuelve a generar.
+            </p>
+          </div>
+        </div>
+      )}
       {/* Info badges */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.6rem",marginBottom:"1rem"}}>
         <div style={{background:"#eff6ff",border:"1.5px solid #93c5fd",borderRadius:"0.75rem",
@@ -1129,7 +1127,14 @@ function ResultView({result,planData,form,onNew}){
           <span style={{color:"#94a3b8",fontSize:"0.72rem",fontFamily:"monospace",marginLeft:"0.5rem"}}>
             planeacion_nem_{(form.disciplina||"").toLowerCase().replace(/\s+/g,"_")}.json
           </span>
-          {hasPlan&&<span style={{marginLeft:"auto",fontSize:"0.68rem",color:"#4ade80",fontFamily:"'DM Sans',sans-serif"}}>✓ JSON estructurado</span>}
+          {hasPlan
+            ? <span style={{marginLeft:"auto",fontSize:"0.68rem",color:"#4ade80",fontFamily:"'DM Sans',sans-serif"}}>
+                ✓ JSON · {planData.sesiones?.length||0} sesiones generadas
+              </span>
+            : <span style={{marginLeft:"auto",fontSize:"0.68rem",color:"#f87171",fontFamily:"'DM Sans',sans-serif"}}>
+                ⚠ JSON no parseado — revisa la API key o reduce sesiones
+              </span>
+          }
         </div>
         <div style={{padding:"1.5rem 2rem",maxHeight:"52vh",overflowY:"auto"}}>
           <pre style={{fontFamily:"'Courier New',monospace",fontSize:"0.78rem",
@@ -1178,13 +1183,13 @@ export default function App(){
     setLoading(true);setMsg(MSGS[0]);
     let i=0;
     const iv=setInterval(()=>{i=(i+1)%MSGS.length;setMsg(MSGS[i]);},2400);
-   const API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
+   const API_KEY = "AIzaSyDDlKteBds31I6kFFhPixu9x0CC5UQEGMg";
     try {
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
         {method:"POST",headers:{"Content-Type":"application/json"},
           body:JSON.stringify({
-            contents:[{parts:[{text:buildJsonPrompt(form)}]}],
+            contents:[{parts:[{text:buildPrompt(form)}]}],
             generationConfig:{temperature:0.6,maxOutputTokens:8192},
           })}
       );
@@ -1195,9 +1200,31 @@ export default function App(){
         const clean=raw.replace(/```json\s*/gi,"").replace(/```\s*/g,"").trim();
         setPlan(JSON.parse(clean));
       }catch(_){
-        const m=raw.match(/\{[\s\S]*\}/);
-        if(m){try{setPlan(JSON.parse(m[0]));}catch(_){setPlan(null);}}
-        else setPlan(null);
+        // Try extracting JSON block
+        const m=raw.match(/\{[\s\S]*/);
+        if(m){
+          let candidate=m[0];
+          // Try to fix truncated JSON by closing open braces/brackets
+          try{JSON.parse(candidate);setPlan(JSON.parse(candidate));}
+          catch(_2){
+            // Count and close unclosed brackets/braces
+            let opens=0,openb=0,inStr=false,esc=false;
+            for(const c of candidate){
+              if(esc){esc=false;continue;}
+              if(c==="\\"){esc=true;continue;}
+              if(c==='"'&&!esc){inStr=!inStr;continue;}
+              if(inStr)continue;
+              if(c==='{')opens++;else if(c==='}')opens--;
+              else if(c==='[')openb++;else if(c===']')openb--;
+            }
+            // Close any open string, then close brackets
+            if(inStr)candidate+='"';
+            while(openb-->0)candidate+=']';
+            while(opens-->0)candidate+='}';
+            try{setPlan(JSON.parse(candidate));}
+            catch(_3){setPlan(null);}
+          }
+        }else setPlan(null);
       }
     }catch(e){
       setResult("❌ Error de conexión:\n"+e.message);
