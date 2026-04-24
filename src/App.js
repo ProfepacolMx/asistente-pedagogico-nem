@@ -1,4 +1,10 @@
+// npm install docx  (necesario en el proyecto React)
 import { useState, useCallback } from "react";
+import {
+  Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+  AlignmentType, BorderStyle, WidthType, ShadingType, VerticalAlign,
+  PageBreak,
+} from "docx";
 
 // ── Google Fonts ──────────────────────────────────────────────────────────────
 const fontLink = document.createElement("link");
@@ -291,602 +297,505 @@ function validate(step, form) {
 
 // ── JSON Prompt ───────────────────────────────────────────────────────────────
 function buildJsonPrompt(f) {
-  return `
-Eres un especialista en diseño curricular de la Nueva Escuela Mexicana (NEM).
-Genera una planeación didáctica COMPLETA y DETALLADA en formato JSON puro.
+  const numParciales = Math.floor(parseInt(f.sesiones) / 5);
+  const parcialEjemplos = Array.from({length: numParciales}, (_,i) =>
+    `"Producto entregable parcial ${i+1} (sesiones ${i*5+1}–${(i+1)*5}): descripción del producto que los alumnos entregarán"`
+  ).join(",\n    ");
 
-DATOS DE ENTRADA:
-- Docente: ${f.docente}
-- Escuela: ${f.escuela} | CCT: ${f.cct||"N/A"} | Zona: ${f.zonaEscolar||"N/A"} | Turno: ${f.turno}
-- Ubicación: ${f.municipio}, ${f.estado}
-- Nivel: ${f.nivel} | Grado: ${f.grado} | Disciplina: ${f.disciplina}
-- Alumnos: ${f.grupoAlumnos||"N/A"}
-- Campo Formativo: ${f.campo}
-- Eje Articulador: ${f.eje}
-- Contenido: ${f.contenido}
-- PDA: ${f.pda}
-- Metodología: ${f.metodologia}
-- Sesiones: ${f.sesiones} × ${f.duracion} minutos
-- Materiales: ${f.materiales}
+  return `
+Eres especialista en diseño curricular de la Nueva Escuela Mexicana (NEM).
+Genera una planeación didáctica en formato JSON puro.
+
+DATOS:
+- Docente: ${f.docente} | Escuela: ${f.escuela} | CCT: ${f.cct||"N/A"} | Zona: ${f.zonaEscolar||"N/A"} | Turno: ${f.turno}
+- Ubicación: ${f.municipio}, ${f.estado} | Nivel: ${f.nivel} | Grado: ${f.grado} | Alumnos: ${f.grupoAlumnos||"N/A"}
+- Disciplina: ${f.disciplina} | Campo: ${f.campo} | Eje: ${f.eje}
+- Contenido (NO generar, se usa tal cual): "${f.contenido}"
+- PDA (NO generar, se usa tal cual): "${f.pda}"
+- Metodología: ${f.metodologia} | Sesiones: ${f.sesiones} × ${f.duracion} min | Materiales: ${f.materiales}
 - Problemática: ${f.problematica}
-- Gamificación: ${f.gamificacion?"Sí":"No"}
-- Sustentabilidad: ${f.reciclaje?"Sí":"No"}
+- Gamificación: ${f.gamificacion?"Sí":"No"} | Sustentabilidad: ${f.reciclaje?"Sí":"No"}
 - Notas extra: ${f.notasExtra||"Ninguna"}
 
-INSTRUCCIÓN CRÍTICA: Responde ÚNICAMENTE con un objeto JSON válido. Sin texto antes ni después. Sin backticks. Sin markdown. Solo el JSON.
+INSTRUCCIÓN CRÍTICA: Responde ÚNICAMENTE con JSON válido. Sin texto, sin backticks, sin markdown.
 
-El JSON debe tener EXACTAMENTE esta estructura:
+ESTRUCTURA EXACTA:
 
 {
-  "periodoAplicacion": "string — mes y periodo del ciclo escolar 2025-2026",
-  "situacionProblema": "string — descripción detallada de la situación problema basada en la problemática indicada (3-4 oraciones)",
-  "escenario": "Aula" | "Escolar" | "Comunitario",
-  "nombreProyecto": "string — nombre creativo y pedagógico del proyecto",
-  "producto": "string — producto final concreto que elaborarán los alumnos",
-  "ejesSeleccionados": [números del 1 al 7 de los ejes articuladores que aplican],
-  "contenido": "string — descripción extendida del contenido matemático/disciplinar (3-5 oraciones)",
-  "pda": "string — el PDA completo con detalle pedagógico (2-3 oraciones)",
-  "aprendizajesEsperados": ["string cognitivo 1","string cognitivo 2","string cognitivo 3","string procedimental 1","string procedimental 2","string actitudinal 1","string actitudinal 2"],
+  "periodoAplicacion": "Ej: Noviembre 2025 — 1er bimestre ciclo 2025-2026",
+  "situacionProblema": "3-4 oraciones contextualizadas en la problemática indicada",
+  "escenario": "Aula",
+  "nombreProyecto": "Nombre creativo del proyecto vinculado al contenido '${f.contenido}'",
+  "producto": "Producto FINAL concreto que entregarán los alumnos al concluir todas las sesiones",
+  "ejesSeleccionados": [1, 3],
+  "productosParciales": [
+    ${parcialEjemplos || `"Sin bloques completos de 5 sesiones en esta planeación"`}
+  ],
   "sesiones": [
     {
       "numero": 1,
       "tipo": "F1",
-      "descripcionInicio": "string — descripción DETALLADA del inicio (mínimo 100 palabras): actividad de apertura, preguntas detonadoras textuales exactas, conexión con saberes previos",
-      "descripcionDesarrollo": "string — descripción DETALLADA del desarrollo (mínimo 150 palabras): actividad principal paso a paso, ejemplos concretos del tema, roles de alumnos, instrucciones directas",
-      "descripcionCierre": "string — descripción DETALLADA del cierre (mínimo 80 palabras): síntesis, preguntas metacognitivas textuales, producto parcial, tarea",
-      "descripcionCompleta": "string — el texto completo unificado de inicio+desarrollo+cierre con todos los detalles",
-      "evaluacionFormativa": "string — códigos separados por coma: MO, ES, E, M, C, RL, PA, PC, R",
-      "formaTrabajo": "string — Ej: Equipos de 4 / Individual / Binas",
-      "materiales": "string — materiales específicos de esta sesión"
+      "descripcion": "INICIO: [Actividad de apertura real + pregunta detonadora concreta sobre '${f.contenido}', organización del grupo, mínimo 3 oraciones]. DESARROLLO: [Actividad principal paso a paso con ejemplo numérico o situacional real del tema, roles de alumnos, mínimo 4 oraciones]. CIERRE: [Síntesis colectiva + pregunta metacognitiva, mínimo 2 oraciones].",
+      "evaluacionFormativa": "MO, ES",
+      "formaTrabajo": "Equipos de 3",
+      "materiales": "Libro SEP p.XX, cartulinas"
     }
   ],
   "evaluacion": {
-    "diagnostica": "string — instrumento diagnóstico completo con preguntas o actividad",
-    "formativa": "string — descripción de los 3 instrumentos formativos con sus criterios",
+    "diagnostica": "Instrumento diagnóstico con 2-3 preguntas o actividad clave sobre saberes previos",
+    "formativa": "2 instrumentos formativos con criterios básicos de observación continua",
     "rubrica": [
       {
-        "criterio": "string",
-        "excelente": "string",
-        "satisfactorio": "string",
-        "enDesarrollo": "string",
-        "insuficiente": "string"
+        "criterio": "Comprensión del concepto",
+        "excelente": "Explica y aplica sin errores con ejemplos propios",
+        "satisfactorio": "Aplica correctamente con mínimos errores",
+        "enDesarrollo": "Aplica parcialmente con apoyo del docente",
+        "insuficiente": "No logra aplicar el concepto aún con apoyo"
+      },
+      {
+        "criterio": "Participación y trabajo colaborativo",
+        "excelente": "Lidera, propone y apoya a sus compañeros",
+        "satisfactorio": "Participa activamente en las actividades",
+        "enDesarrollo": "Participa solo cuando se le solicita",
+        "insuficiente": "No participa ni colabora con el equipo"
+      },
+      {
+        "criterio": "Calidad del producto entregable",
+        "excelente": "Producto completo, claro y con argumentación sólida",
+        "satisfactorio": "Producto completo con pequeños errores",
+        "enDesarrollo": "Producto incompleto o con errores relevantes",
+        "insuficiente": "No entrega o el producto no cumple los criterios"
       }
     ]
   },
-  "fundamentacion": "string — 3-4 oraciones sobre fundamentos teóricos NEM, autores y referentes curriculares",
   "gamificacion": ${f.gamificacion?`{
-    "sistema": "string — descripción del sistema de puntos",
-    "insignias": ["string — insignia 1","string — insignia 2","string — insignia 3","string — insignia 4"],
-    "retos": ["string — reto 1","string — reto 2","string — reto 3"]
+    "sistema": "Descripción del sistema de puntos e insignias",
+    "insignias": ["Insignia 1", "Insignia 2", "Insignia 3"],
+    "retos": ["Reto 1", "Reto 2"]
   }`:"null"},
   "sustentabilidad": ${f.reciclaje?`{
-    "materiales": "string — lista de materiales reciclados a usar",
-    "actividad": "string — actividad de reflexión ambiental integrada",
-    "ods": "string — vinculación con ODS de la Agenda 2030"
+    "materiales": "Lista de materiales reciclados",
+    "actividad": "Actividad de reflexión ambiental integrada",
+    "ods": "Vinculación con ODS de la Agenda 2030"
   }`:"null"}
 }
 
-IMPORTANTE: 
-- Genera EXACTAMENTE ${f.sesiones} objetos en el array "sesiones"
-- Cada sesión debe tener contenido ÚNICO y DETALLADO, no repetitivo
-- Las descripciones deben ser largas y completas, con ejemplos reales
-- El tipo de sesión sigue esta lógica: sesión 1-2 = "F1", 3-4 = "F2", últimas = "EV"
+REGLAS:
+- Genera EXACTAMENTE ${f.sesiones} sesiones; tipo: 1-2="F1", 3-4="F2", últimas="EV"
+- Sesiones con formato INICIO/DESARROLLO/CIERRE y ejemplos REALES del tema
+- Rúbrica: adapta el contenido de los 3 criterios al tema, descriptores breves (1 oración)
+- "productosParciales": ${numParciales} elemento(s) — uno por cada bloque de 5 sesiones
 `.trim();
 }
 
-// ── PDF HTML Generator (SEPE Tlaxcala Format) ─────────────────────────────────
-function generateFormatHTML(form, plan) {
-  const ejesTodos = EJES.map((e, i) => ({
-    num: i + 1, nombre: e,
-    marcado: plan.ejesSeleccionados && plan.ejesSeleccionados.includes(i + 1),
-  }));
+// ── Word Document Generator (SEPE Tlaxcala Format) ──────────────────────────────
+async function generateWordDoc(form, plan) {
 
-  const header = `
-    <div class="page-header">
-      <div class="header-left">
-        <svg width="90" height="75" viewBox="0 0 90 75" xmlns="http://www.w3.org/2000/svg">
-          <rect width="90" height="75" rx="4" fill="#f0f0f0"/>
-          <!-- Tlaxcala flower logo approximation -->
-          <circle cx="35" cy="38" r="14" fill="none" stroke="#7030A0" stroke-width="2"/>
-          <circle cx="35" cy="22" r="5" fill="#7030A0"/>
-          <circle cx="35" cy="54" r="5" fill="#7030A0"/>
-          <circle cx="21" cy="38" r="5" fill="#7030A0"/>
-          <circle cx="49" cy="38" r="5" fill="#7030A0"/>
-          <circle cx="25" cy="27" r="4" fill="#C0A020"/>
-          <circle cx="45" cy="27" r="4" fill="#C0A020"/>
-          <circle cx="25" cy="49" r="4" fill="#C0A020"/>
-          <circle cx="45" cy="49" r="4" fill="#C0A020"/>
-          <circle cx="35" cy="38" r="6" fill="#7030A0"/>
-          <text x="52" y="28" font-family="Arial Black" font-size="10" font-weight="900" fill="#4B0082">TLAXCALA</text>
-          <text x="52" y="40" font-family="Arial" font-size="6" fill="#555">UNA NUEVA HISTORIA</text>
-          <text x="52" y="51" font-family="Arial" font-size="6" fill="#555">2021 – 2027</text>
-        </svg>
-      </div>
-      <div class="header-center">
-        <p class="header-title">DEPARTAMENTO DE EDUCACIÓN SECUNDARIA GENERAL</p>
-        <p class="header-subtitle">JEFATURAS DE ENSEÑANZA</p>
-      </div>
-      <div class="header-right">
-        <div class="fivb-box">
-          <p style="font-size:7pt;color:#333;line-height:1.3">Beach Volleyball<br><strong>World Championships</strong></p>
-          <div style="background:#1a3c6e;color:white;padding:2px 6px;font-size:8pt;font-weight:bold;margin:2px 0">TLAXCALA 2023</div>
-          <p style="font-size:8pt;font-weight:bold;color:#1a3c6e">FIVB</p>
-        </div>
-      </div>
-    </div>
-  `;
+  // ── Medidas A4 ────────────────────────────────────────────────────────────
+  const PW = 11906;               // A4 ancho DXA
+  const MG = 1134;                // 2 cm en DXA
+  const TW = PW - 2 * MG;        // 9638 — ancho útil de tabla
 
-  const footer = `
-    <div class="page-footer">
-      <div class="footer-qr">
-        <svg width="40" height="40" viewBox="0 0 40 40">
-          <rect width="40" height="40" fill="white" stroke="#ccc" stroke-width="0.5"/>
-          <rect x="2" y="2" width="16" height="16" fill="none" stroke="black" stroke-width="1.5"/>
-          <rect x="5" y="5" width="10" height="10" fill="black"/>
-          <rect x="22" y="2" width="16" height="16" fill="none" stroke="black" stroke-width="1.5"/>
-          <rect x="25" y="5" width="10" height="10" fill="black"/>
-          <rect x="2" y="22" width="16" height="16" fill="none" stroke="black" stroke-width="1.5"/>
-          <rect x="5" y="25" width="10" height="10" fill="black"/>
-          <rect x="22" y="22" width="5" height="5" fill="black"/>
-          <rect x="29" y="22" width="5" height="5" fill="black"/>
-          <rect x="22" y="29" width="5" height="5" fill="black"/>
-          <rect x="29" y="29" width="5" height="5" fill="black"/>
-        </svg>
-      </div>
-      <div class="footer-logos">
-        <div class="footer-sepe">
-          <svg width="30" height="30" viewBox="0 0 30 30">
-            <circle cx="15" cy="15" r="12" fill="none" stroke="#4a7c3f" stroke-width="1.5"/>
-            <circle cx="10" cy="12" r="3" fill="#4a7c3f"/>
-            <circle cx="20" cy="12" r="3" fill="#4a7c3f"/>
-            <circle cx="15" cy="8" r="3" fill="#7030A0"/>
-            <circle cx="15" cy="20" r="3" fill="#7030A0"/>
-          </svg>
-          <div>
-            <p style="font-size:11pt;font-weight:900;color:#4a7c3f;line-height:1">SEPE</p>
-            <p style="font-size:5pt;color:#555;line-height:1.3">SECRETARÍA DE EDUCACIÓN<br>PÚBLICA DEL ESTADO</p>
-          </div>
-        </div>
-        <div class="footer-uset">
-          <p style="font-size:13pt;font-weight:900;color:#1a3c6e;line-height:1">USET</p>
-          <p style="font-size:5pt;color:#555;line-height:1.3">UNIDAD DE SERVICIOS EDUCATIVOS<br>DEL ESTADO DE TLAXCALA</p>
-        </div>
-      </div>
-      <div class="footer-bar"></div>
-    </div>
-  `;
+  // ── Paleta de colores ─────────────────────────────────────────────────────
+  const C = {
+    green:   "5A9E44", blue:    "4472C4", purple:  "7030A0", gold: "C9A820",
+    amber:   "F59E0B", lPurple: "F8F4FF", lGreen:  "E8F5E9",
+    lYellow: "FFF9C4", lOrange: "FFF3E0", lRed:    "FCE4EC",
+    lAmber:  "FEF3C7", white:   "FFFFFF", dark:    "1A1A1A",
+  };
 
-  const watermark = `
-    <div class="watermark">
-      <svg width="320" height="420" viewBox="0 0 320 420" xmlns="http://www.w3.org/2000/svg" opacity="0.06">
-        <g transform="translate(160,210)">
-          <!-- Large petal shapes -->
-          <ellipse cx="0" cy="-90" rx="28" ry="70" fill="#7030A0" transform="rotate(0)"/>
-          <ellipse cx="0" cy="-90" rx="28" ry="70" fill="#7030A0" transform="rotate(45)"/>
-          <ellipse cx="0" cy="-90" rx="28" ry="70" fill="#7030A0" transform="rotate(90)"/>
-          <ellipse cx="0" cy="-90" rx="28" ry="70" fill="#7030A0" transform="rotate(135)"/>
-          <ellipse cx="0" cy="-90" rx="28" ry="70" fill="#7030A0" transform="rotate(180)"/>
-          <ellipse cx="0" cy="-90" rx="28" ry="70" fill="#7030A0" transform="rotate(225)"/>
-          <ellipse cx="0" cy="-90" rx="28" ry="70" fill="#7030A0" transform="rotate(270)"/>
-          <ellipse cx="0" cy="-90" rx="28" ry="70" fill="#7030A0" transform="rotate(315)"/>
-          <!-- Inner petals -->
-          <ellipse cx="0" cy="-55" rx="18" ry="45" fill="#C0A020" transform="rotate(22.5)"/>
-          <ellipse cx="0" cy="-55" rx="18" ry="45" fill="#C0A020" transform="rotate(67.5)"/>
-          <ellipse cx="0" cy="-55" rx="18" ry="45" fill="#C0A020" transform="rotate(112.5)"/>
-          <ellipse cx="0" cy="-55" rx="18" ry="45" fill="#C0A020" transform="rotate(157.5)"/>
-          <ellipse cx="0" cy="-55" rx="18" ry="45" fill="#C0A020" transform="rotate(202.5)"/>
-          <ellipse cx="0" cy="-55" rx="18" ry="45" fill="#C0A020" transform="rotate(247.5)"/>
-          <ellipse cx="0" cy="-55" rx="18" ry="45" fill="#C0A020" transform="rotate(292.5)"/>
-          <ellipse cx="0" cy="-55" rx="18" ry="45" fill="#C0A020" transform="rotate(337.5)"/>
-          <circle cx="0" cy="0" r="28" fill="#7030A0"/>
-          <circle cx="0" cy="0" r="18" fill="#C0A020"/>
-          <!-- Outer decorative ring -->
-          <circle cx="0" cy="0" r="130" fill="none" stroke="#7030A0" stroke-width="2"/>
-          <circle cx="0" cy="0" r="145" fill="none" stroke="#C0A020" stroke-width="1"/>
-        </g>
-      </svg>
-    </div>
-  `;
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  const br  = (c = C.blue) => ({ style: BorderStyle.SINGLE, size: 4, color: c });
+  const brs = (c = C.blue) => ({ top: br(c), bottom: br(c), left: br(c), right: br(c) });
+  const CM  = { top: 60, bottom: 60, left: 120, right: 120 };
 
-  // Build session rows
-  const sessionRows = (plan.sesiones || []).map(s => `
-    <tr class="session-row">
-      <td class="td-num">${s.numero}</td>
-      <td class="td-tipo">${s.tipo || 'F1'}</td>
-      <td class="td-desc">${(s.descripcionCompleta || s.descripcionInicio + ' ' + s.descripcionDesarrollo + ' ' + s.descripcionCierre || '').replace(/\n/g,'<br>')}</td>
-      <td class="td-eval">${s.evaluacionFormativa || ''}</td>
-      <td class="td-forma">${s.formaTrabajo || ''}</td>
-      <td class="td-mat">${s.materiales || ''}</td>
-    </tr>
-  `).join('');
+  const run = (text = "", opts = {}) => new TextRun({
+    text, font: "Arial", size: opts.size || 18,
+    bold: opts.bold || false, color: opts.color || C.dark,
+    italics: opts.italic || false,
+  });
 
-  // Rubric rows
-  const rubricRows = (plan.evaluacion?.rubrica || []).map(r => `
-    <tr>
-      <td style="font-weight:bold;color:#7030A0;padding:4pt 6pt;border:1pt solid #4472C4;font-size:8.5pt">${r.criterio}</td>
-      <td style="padding:4pt 6pt;border:1pt solid #4472C4;font-size:8pt;background:#e8f5e9">${r.excelente}</td>
-      <td style="padding:4pt 6pt;border:1pt solid #4472C4;font-size:8pt;background:#fff9c4">${r.satisfactorio}</td>
-      <td style="padding:4pt 6pt;border:1pt solid #4472C4;font-size:8pt;background:#fff3e0">${r.enDesarrollo}</td>
-      <td style="padding:4pt 6pt;border:1pt solid #4472C4;font-size:8pt;background:#fce4ec">${r.insuficiente}</td>
-    </tr>
-  `).join('');
+  const para = (children, align = AlignmentType.LEFT) =>
+    new Paragraph({ alignment: align, spacing: { before: 0, after: 0 }, children });
 
-  return `<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<title>Plano Didáctico – ${form.escuela}</title>
-<link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Patrick Hand', 'Comic Sans MS', cursive; color: #1a1a1a; background: white; font-size: 10pt; }
-  @page { size: A4; margin: 1.4cm 1.6cm 1.8cm 1.6cm; }
+  const mkCell = (childrenOrText, opts = {}) => {
+    const children = typeof childrenOrText === "string"
+      ? [para([run(childrenOrText, { size: opts.size||17, bold: opts.bold, color: opts.color })])]
+      : childrenOrText;
+    return new TableCell({
+      borders: brs(opts.bc || C.blue),
+      shading: { fill: opts.bg || C.white, type: ShadingType.CLEAR },
+      margins: CM,
+      width: { size: opts.w || 1000, type: WidthType.DXA },
+      columnSpan: opts.span || 1,
+      verticalAlign: opts.vAlign || VerticalAlign.TOP,
+      children,
+    });
+  };
 
-  /* LAYOUT */
-  .page { position: relative; min-height: 100vh; }
-  .page-break { page-break-after: always; }
+  const lbl = (text, w) => mkCell(text, { w, bg: C.lPurple, bold: true, color: C.purple, size: 17 });
+  const val = (text, w, span = 1) => mkCell(text || "", { w, span, size: 17 });
 
-  /* HEADER */
-  .page-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding-bottom: 8pt; margin-bottom: 10pt;
-    border-bottom: 2pt solid #C9A820;
+  const bannerRow = (text, color, span = 1, w = TW) => new TableRow({ children: [
+    new TableCell({
+      borders: brs(color), shading: { fill: color, type: ShadingType.CLEAR },
+      margins: CM, width: { size: w, type: WidthType.DXA }, columnSpan: span,
+      children: [para([run(text, { bold: true, color: C.white, size: 20 })], AlignmentType.CENTER)],
+    })
+  ]});
+
+  const tbl = (widths, rows) => new Table({
+    width: { size: widths.reduce((a, b) => a + b, 0), type: WidthType.DXA },
+    columnWidths: widths, rows,
+  });
+
+  const pg = () => new Paragraph({ children: [new PageBreak()] });
+  const sp = () => new Paragraph({ spacing: { before: 0, after: 120 }, children: [] });
+
+  // ── Ejes ──────────────────────────────────────────────────────────────────
+  const EJES_LIST = [
+    "Inclusión", "Pensamiento crítico", "Interculturalidad crítica",
+    "Igualdad de género", "Vida saludable",
+    "Apropiación de las culturas a través de la lectura y la escritura",
+    "Artes y experiencias estéticas",
+  ];
+  const ejSel = plan.ejesSeleccionados || [];
+
+  // ── Acumular contenido ────────────────────────────────────────────────────
+  const kids = [];
+
+  // ════════════════════ PÁGINA 1 – Datos Generales ══════════════════════════
+  kids.push(tbl([TW], [
+    new TableRow({ children: [new TableCell({
+      borders: brs(C.gold), shading: { fill: "FFFFF5", type: ShadingType.CLEAR },
+      margins: { top: 100, bottom: 100, left: 160, right: 160 },
+      width: { size: TW, type: WidthType.DXA },
+      children: [
+        para([run("DEPARTAMENTO DE EDUCACIÓN SECUNDARIA GENERAL", { bold: true, size: 22 })], AlignmentType.CENTER),
+        para([run("JEFATURAS DE ENSEÑANZA", { bold: true, size: 20 })], AlignmentType.CENTER),
+      ],
+    })] }),
+  ]));
+  kids.push(sp());
+
+  kids.push(tbl([TW], [
+    bannerRow(`Plano Didáctico de ${form.disciplina} — Ciclo Escolar 2025 – 2026`, C.green)
+  ]));
+  kids.push(sp());
+
+  // Datos del plantel
+  const C3 = Math.floor(TW / 3);
+  const C3r = TW - C3 * 2;
+  kids.push(tbl([C3, C3, C3r], [
+    new TableRow({ children: [
+      lbl(`Escuela: ${form.escuela}`, C3),
+      mkCell(`CCT: ${form.cct || ""}`, { w: C3 + C3r, span: 2, size: 17 }),
+    ]}),
+    new TableRow({ children: [
+      lbl(`Zona Escolar: ${form.zonaEscolar || ""}`, C3),
+      lbl(`Turno: ${form.turno}`, C3),
+      lbl(`Localidad: ${form.municipio}, ${form.estado}`, C3r),
+    ]}),
+    new TableRow({ children: [
+      lbl(`Grado: ${form.grado}${form.grupoAlumnos ? " — " + form.grupoAlumnos + " alumnos" : ""}`, C3),
+      mkCell(`Docente: ${form.docente}`, { w: C3 + C3r, span: 2, bg: C.lPurple, bold: true, color: C.purple, size: 17 }),
+    ]}),
+  ]));
+  kids.push(sp());
+
+  const LPer = Math.floor(TW * 0.26);
+  kids.push(tbl([LPer, TW - LPer], [
+    new TableRow({ children: [
+      lbl("Periodo de Aplicación:", LPer),
+      val(plan.periodoAplicacion || "Ciclo Escolar 2025-2026", TW - LPer),
+    ]})
+  ]));
+
+  // ════════════════════ PÁGINA 2 – Generalidades + Ejes ════════════════════
+  kids.push(pg());
+
+  kids.push(tbl([TW], [bannerRow("Generalidades (Estructura General del Proyecto)", C.green)]));
+
+  const GL = Math.floor(TW * 0.22);
+  const GV = TW - GL;
+  kids.push(tbl([GL, GV], [
+    new TableRow({ children: [lbl("Situación-Problema", GL), val(plan.situacionProblema || form.problematica, GV)] }),
+    new TableRow({ children: [
+      lbl("Escenario", GL),
+      mkCell([para([
+        run(`(${plan.escenario === "Aula" ? "✓" : " "}) Aula   `, { size: 17 }),
+        run(`(  ) Escolar   (  ) Comunitario`, { size: 17 }),
+      ])], { w: GV }),
+    ]}),
+    new TableRow({ children: [lbl("Nombre del Proyecto", GL), val(plan.nombreProyecto || "", GV)] }),
+    new TableRow({ children: [lbl("Metodología", GL), val(form.metodologia, GV)] }),
+    new TableRow({ children: [lbl("Producto Final", GL), val(plan.producto || "", GV)] }),
+  ]));
+  kids.push(sp());
+
+  // Ejes articuladores
+  const EW = Math.floor(TW * 0.52);
+  const EM = 700, EN = 500, EName = EW - EM - EN;
+  kids.push(tbl([EM, EN, EName], [
+    new TableRow({ children: [
+      mkCell("Marcar", { w: EM, bg: C.blue, bc: C.blue, bold: true, color: C.white, size: 16, vAlign: VerticalAlign.CENTER }),
+      mkCell("Ejes Articuladores", { w: EN + EName, span: 2, bg: C.blue, bc: C.blue, bold: true, color: C.white, size: 16 }),
+    ]}),
+    ...EJES_LIST.map((eje, i) => new TableRow({ children: [
+      mkCell(ejSel.includes(i + 1) ? "(✓)" : "(   )", { w: EM, bg: C.lPurple, bold: true, color: C.purple, size: 17, vAlign: VerticalAlign.CENTER }),
+      mkCell(`${i + 1}.`, { w: EN, bold: true, color: C.purple, size: 17 }),
+      mkCell(eje, { w: EName, size: 16 }),
+    ]})),
+  ]));
+
+  // ════════════════════ PÁGINA 3 – Contenido + PDA (del formulario) ═════════
+  kids.push(pg());
+
+  kids.push(tbl([TW], [
+    bannerRow("Contenido", C.green),
+    new TableRow({ children: [new TableCell({
+      borders: brs(), margins: { top: 120, bottom: 120, left: 160, right: 160 },
+      width: { size: TW, type: WidthType.DXA },
+      children: [para([run(form.contenido || "", { size: 17 })])],
+    })] }),
+    bannerRow("Proceso de Desarrollo de Aprendizaje (PDA)", C.green),
+    new TableRow({ children: [new TableCell({
+      borders: brs(), margins: { top: 120, bottom: 120, left: 160, right: 160 },
+      width: { size: TW, type: WidthType.DXA },
+      children: [para([run(form.pda || "", { size: 17 })])],
+    })] }),
+  ]));
+  kids.push(sp());
+
+  kids.push(tbl([TW], [
+    bannerRow(`Campo Formativo: ${form.campo}   |   Eje Articulador: ${form.eje}`, C.green)
+  ]));
+
+  // ════════════════════ PÁGINA 4 – Nomenclatura + Sesiones ═════════════════
+  kids.push(pg());
+
+  const makeNomTbl = (title, items) => {
+    const n = items.length;
+    const colW = Math.floor(TW / n);
+    const lastW = TW - colW * (n - 1);
+    return tbl([...Array(n - 1).fill(colW), lastW], [
+      new TableRow({ children: [mkCell(title, { w: TW, span: n, bg: C.blue, bc: C.blue, bold: true, color: C.white, size: 16 })] }),
+      new TableRow({ children: items.map((txt, i) => mkCell(txt, { w: i === n - 1 ? lastW : colW, size: 15 })) }),
+    ]);
+  };
+
+  kids.push(makeNomTbl("Nomenclatura del tipo de Actividades",
+    ["C – Contenido", "EV – Evaluación", "F1 – Fase 1", "F2 – Fase 2", "F3 – Fase 3", "F4 – Fase 4", "F5 – Fase 5"]));
+  kids.push(sp());
+  kids.push(makeNomTbl("Nomenclatura del Proceso de Evaluación Formativa",
+    ["MO – Motivar y Orientar", "ES – Establecer y Socializar", "E – Explorar", "M – Monitoreo",
+     "C – Control", "RL – Resaltar Logros", "PA – Autoevaluación", "PC – Coevaluación", "R – Retroalimentación"]));
+  kids.push(sp());
+
+  // Tabla de sesiones — columnas
+  const SN = 580, ST = 580, SD = 5000, SE = 980, SF = 980, SM = TW - SN - ST - SD - SE - SF;
+
+  const sesHeaderRow = new TableRow({ children: [
+    mkCell("Sesión",      { w: SN, bg: C.green, bc: C.green, bold: true, color: C.white, size: 16, vAlign: VerticalAlign.CENTER }),
+    mkCell("Tipo",        { w: ST, bg: C.green, bc: C.green, bold: true, color: C.white, size: 16, vAlign: VerticalAlign.CENTER }),
+    mkCell("Descripción de la Actividad (INICIO / DESARROLLO / CIERRE)",
+                          { w: SD, bg: C.green, bc: C.green, bold: true, color: C.white, size: 16 }),
+    mkCell("Proceso Evaluación Formativa",
+                          { w: SE, bg: C.green, bc: C.green, bold: true, color: C.white, size: 15 }),
+    mkCell("Forma de Trabajo",
+                          { w: SF, bg: C.green, bc: C.green, bold: true, color: C.white, size: 15 }),
+    mkCell("Materiales",  { w: SM, bg: C.green, bc: C.green, bold: true, color: C.white, size: 15 }),
+  ]});
+
+  const sesDataRows = [];
+  (plan.sesiones || []).forEach((s, idx) => {
+    const isEven = idx % 2 === 1;
+    const bg = isEven ? "F7F7FF" : C.white;
+
+    // Formatear descripción con INICIO/DESARROLLO/CIERRE en negrita
+    const rawDesc = s.descripcion || "";
+    const parts = rawDesc.split(/(INICIO:|DESARROLLO:|CIERRE:)/);
+    const descParas = [];
+    let i = 0;
+    while (i < parts.length) {
+      if (["INICIO:", "DESARROLLO:", "CIERRE:"].includes(parts[i])) {
+        descParas.push(new Paragraph({
+          spacing: { before: 0, after: 40 },
+          children: [
+            run(parts[i] + " ", { bold: true, color: C.green, size: 15 }),
+            run((parts[i + 1] || "").trim(), { size: 15 }),
+          ],
+        }));
+        i += 2;
+      } else {
+        if (parts[i].trim()) descParas.push(para([run(parts[i].trim(), { size: 15 })]));
+        i++;
+      }
+    }
+    if (!descParas.length) descParas.push(para([run(rawDesc, { size: 15 })]));
+
+    sesDataRows.push(new TableRow({ children: [
+      mkCell(String(s.numero), { w: SN, bg, bold: true, color: C.purple, size: 17, vAlign: VerticalAlign.CENTER }),
+      mkCell(s.tipo || "F1",   { w: ST, bg, size: 17, vAlign: VerticalAlign.CENTER }),
+      mkCell(descParas,        { w: SD, bg }),
+      mkCell(s.evaluacionFormativa || "", { w: SE, bg, size: 15 }),
+      mkCell(s.formaTrabajo || "",        { w: SF, bg, size: 15 }),
+      mkCell(s.materiales || "",          { w: SM, bg, size: 15 }),
+    ]}));
+
+    // Producto entregable cada 5 sesiones
+    if ((idx + 1) % 5 === 0) {
+      const pIdx = Math.floor(idx / 5);
+      const pText = (plan.productosParciales || [])[pIdx]
+        || `Producto Entregable Parcial – Sesiones ${idx - 3} a ${idx + 1}`;
+      const amberBr = { style: BorderStyle.SINGLE, size: 8, color: "F59E0B" };
+      sesDataRows.push(new TableRow({ children: [
+        new TableCell({
+          borders: { top: amberBr, bottom: amberBr, left: amberBr, right: amberBr },
+          shading: { fill: C.lAmber, type: ShadingType.CLEAR },
+          margins: CM,
+          width: { size: TW, type: WidthType.DXA },
+          columnSpan: 6,
+          children: [para([
+            run("PRODUCTO ENTREGABLE: ", { bold: true, color: "B45309", size: 18 }),
+            run(pText, { size: 17, color: "78350F" }),
+          ])],
+        })
+      ]}));
+    }
+  });
+
+  kids.push(tbl([SN, ST, SD, SE, SF, SM], [sesHeaderRow, ...sesDataRows]));
+
+  // ════════════════════ PÁGINA 5 – Evaluación + Rúbrica ════════════════════
+  kids.push(pg());
+
+  kids.push(tbl([TW], [bannerRow("Estrategia de Evaluación Integral", C.purple)]));
+  kids.push(sp());
+
+  const evalBox = (label, text) => tbl([TW], [
+    new TableRow({ children: [new TableCell({
+      borders: brs(C.purple), shading: { fill: C.lPurple, type: ShadingType.CLEAR },
+      margins: { top: 80, bottom: 4, left: 140, right: 140 },
+      width: { size: TW, type: WidthType.DXA },
+      children: [para([run(label, { bold: true, color: C.purple, size: 19 })])],
+    })] }),
+    new TableRow({ children: [new TableCell({
+      borders: brs(C.purple), margins: { top: 4, bottom: 80, left: 140, right: 140 },
+      width: { size: TW, type: WidthType.DXA },
+      children: [para([run(text || "", { size: 17 })])],
+    })] }),
+  ]);
+
+  kids.push(evalBox("📋 Evaluación Diagnóstica", plan.evaluacion?.diagnostica || ""));
+  kids.push(sp());
+  kids.push(evalBox("📊 Evaluación Formativa",   plan.evaluacion?.formativa   || ""));
+  kids.push(sp());
+
+  // Rúbrica
+  kids.push(tbl([TW], [bannerRow("Rúbrica de Evaluación Sumativa", C.green)]));
+  const R0 = 1800, R1 = 1960, R2 = 1960, R3 = 1960, R4 = TW - R0 - R1 - R2 - R3;
+  kids.push(tbl([R0, R1, R2, R3, R4], [
+    new TableRow({ children: [
+      mkCell("Criterio",          { w: R0, bg: C.purple,  bc: C.purple,  bold: true, color: C.white, size: 16 }),
+      mkCell("Excelente (4)",     { w: R1, bg: "2E7D32",  bc: "2E7D32",  bold: true, color: C.white, size: 16 }),
+      mkCell("Satisfactorio (3)", { w: R2, bg: "F9A825",  bc: "F9A825",  bold: true, color: C.white, size: 16 }),
+      mkCell("En desarrollo (2)", { w: R3, bg: "E65100",  bc: "E65100",  bold: true, color: C.white, size: 16 }),
+      mkCell("Insuficiente (1)",  { w: R4, bg: "C62828",  bc: "C62828",  bold: true, color: C.white, size: 16 }),
+    ]}),
+    ...(plan.evaluacion?.rubrica || []).map(r => new TableRow({ children: [
+      mkCell(r.criterio,       { w: R0, bg: C.lPurple, bold: true, color: C.purple, size: 16 }),
+      mkCell(r.excelente,      { w: R1, bg: C.lGreen,  size: 16 }),
+      mkCell(r.satisfactorio,  { w: R2, bg: C.lYellow, size: 16 }),
+      mkCell(r.enDesarrollo,   { w: R3, bg: C.lOrange, size: 16 }),
+      mkCell(r.insuficiente,   { w: R4, bg: C.lRed,    size: 16 }),
+    ]})),
+  ]));
+
+  // ════════════════════ PÁGINA 6 – Extras (opcionales) ═════════════════════
+  if (plan.gamificacion || plan.sustentabilidad || form.notasExtra) {
+    kids.push(pg());
+
+    if (plan.gamificacion) {
+      kids.push(tbl([TW], [bannerRow("🎮 Estrategia de Gamificación", C.blue)]));
+      kids.push(tbl([TW], [
+        new TableRow({ children: [new TableCell({
+          borders: brs(C.blue), shading: { fill: "EFF6FF", type: ShadingType.CLEAR },
+          margins: CM, width: { size: TW, type: WidthType.DXA },
+          children: [
+            para([run("Sistema de puntos: ", { bold: true, color: C.blue, size: 17 }),
+                  run(plan.gamificacion.sistema || "", { size: 17 })]),
+            para([run("Insignias:", { bold: true, color: C.blue, size: 17 })]),
+            ...(plan.gamificacion.insignias || []).map(ins => para([run("  🏅 " + ins, { size: 17 })])),
+            para([run("Retos:", { bold: true, color: C.blue, size: 17 })]),
+            ...(plan.gamificacion.retos || []).map(r => para([run("  ⚡ " + r, { size: 17 })])),
+          ],
+        })] }),
+      ]));
+      kids.push(sp());
+    }
+
+    if (plan.sustentabilidad) {
+      kids.push(tbl([TW], [bannerRow("♻️ Educación Ambiental y Sustentabilidad", C.green)]));
+      kids.push(tbl([TW], [
+        new TableRow({ children: [new TableCell({
+          borders: brs(C.green), shading: { fill: "F0FDF4", type: ShadingType.CLEAR },
+          margins: CM, width: { size: TW, type: WidthType.DXA },
+          children: [
+            para([run("Materiales reciclados: ",  { bold: true, color: C.green, size: 17 }), run(plan.sustentabilidad.materiales || "", { size: 17 })]),
+            para([run("Actividad ambiental: ",    { bold: true, color: C.green, size: 17 }), run(plan.sustentabilidad.actividad  || "", { size: 17 })]),
+            para([run("Vinculación con ODS: ",    { bold: true, color: C.green, size: 17 }), run(plan.sustentabilidad.ods        || "", { size: 17 })]),
+          ],
+        })] }),
+      ]));
+      kids.push(sp());
+    }
+
+    if (form.notasExtra) {
+      kids.push(tbl([TW], [bannerRow("Notas Adicionales / Adecuaciones Curriculares", C.green)]));
+      kids.push(tbl([TW], [
+        new TableRow({ children: [new TableCell({
+          borders: brs(), margins: CM, width: { size: TW, type: WidthType.DXA },
+          children: [para([run(form.notasExtra, { size: 17 })])],
+        })] }),
+      ]));
+      kids.push(sp());
+    }
   }
-  .header-left { flex: 0 0 auto; }
-  .header-center { flex: 1; text-align: center; padding: 0 12pt; }
-  .header-title {
-    font-family: 'IM Fell English', 'Palatino Linotype', serif;
-    font-size: 12.5pt; letter-spacing: 0.06em; color: #1a1a1a; line-height: 1.4;
-  }
-  .header-subtitle {
-    font-family: 'IM Fell English', 'Palatino Linotype', serif;
-    font-size: 11pt; letter-spacing: 0.05em; color: #1a1a1a;
-  }
-  .header-right { flex: 0 0 auto; }
-  .fivb-box { border: 1pt solid #ccc; padding: 4pt 6pt; border-radius: 3pt; text-align: center; min-width: 90pt; }
 
-  /* WATERMARK */
-  .watermark {
-    position: fixed; right: -30pt; top: 50%;
-    transform: translateY(-50%); pointer-events: none; z-index: 0;
-  }
+  // Pie
+  kids.push(sp());
+  kids.push(para([run(
+    `Documento generado con apoyo de IA como herramienta pedagógica. El docente es responsable de su revisión y aplicación. · Prof. ${form.docente} · SEPE · USET Tlaxcala · NEM 2022`,
+    { size: 14, color: "888888", italic: true }
+  )], AlignmentType.CENTER));
 
-  /* CONTENT */
-  .content { position: relative; z-index: 1; }
+  // ── Compilar y descargar ──────────────────────────────────────────────────
+  const wordDoc = new Document({
+    creator: form.docente,
+    title: `Plano Didáctico – ${form.disciplina} – ${form.escuela}`,
+    sections: [{
+      properties: {
+        page: {
+          size: { width: PW, height: 16838 },
+          margin: { top: MG, right: MG, bottom: MG, left: MG },
+        },
+      },
+      children: kids,
+    }],
+  });
 
-  /* BANNERS */
-  .banner-green {
-    background: #5a9e44; color: white; text-align: center;
-    padding: 5pt 10pt; font-weight: bold; font-size: 11pt;
-    border-radius: 2pt;
-  }
-  .banner-blue {
-    background: #4472C4; color: white; text-align: center;
-    padding: 5pt 10pt; font-weight: bold; font-size: 11pt;
-    border-radius: 2pt;
-  }
-  .banner-purple {
-    background: #7030A0; color: white; text-align: center;
-    padding: 5pt 10pt; font-weight: bold; font-size: 11pt;
-    border-radius: 2pt;
-  }
-
-  /* TABLES */
-  .tbl { width: 100%; border-collapse: collapse; margin-bottom: 10pt; }
-  .tbl td, .tbl th {
-    border: 1pt solid #4472C4; padding: 5pt 7pt; vertical-align: top;
-    font-family: 'Patrick Hand', cursive; font-size: 9.5pt; line-height: 1.45;
-  }
-  .tbl .lbl { color: #7030A0; font-weight: bold; background: #f8f4ff; white-space: nowrap; }
-  .tbl .val { color: #1a1a1a; }
-  .tbl-header {
-    background: #5a9e44; color: white; font-weight: bold;
-    text-align: center; font-size: 10pt; padding: 5pt;
-  }
-  .tbl-subheader {
-    background: #4472C4; color: white; font-weight: bold;
-    text-align: center; font-size: 9pt; padding: 4pt;
-  }
-
-  /* STRATEGY TABLE */
-  .strat-table { width: 100%; border-collapse: collapse; margin-top: 6pt; font-size: 8.5pt; }
-  .strat-table th {
-    background: #5a9e44; color: white; border: 1pt solid #3a7e2a;
-    padding: 5pt 4pt; text-align: center; font-size: 8.5pt; line-height: 1.3;
-  }
-  .strat-table td {
-    border: 1pt solid #4472C4; padding: 5pt 4pt; vertical-align: top;
-    line-height: 1.5; font-size: 8pt;
-  }
-  .td-num { text-align: center; font-weight: bold; color: #7030A0; width: 28pt; }
-  .td-tipo { text-align: center; width: 28pt; }
-  .td-desc { width: 42%; }
-  .td-eval { width: 12%; font-size: 7.5pt; }
-  .td-forma { width: 10%; font-size: 7.5pt; }
-  .td-mat { width: 14%; font-size: 7.5pt; }
-  .session-row:nth-child(even) { background: #f7f7ff; }
-
-  /* EJES TABLE */
-  .ejes-tbl { width: 50%; border-collapse: collapse; margin-bottom: 10pt; }
-  .ejes-tbl td { border: 1pt solid #4472C4; padding: 4pt 7pt; font-size: 9pt; }
-  .ejes-mark { text-align: center; color: #7030A0; font-weight: bold; background: #f8f4ff; width: 40pt; }
-  .ejes-num { color: #7030A0; font-weight: bold; width: 22pt; }
-
-  /* NOMENCLATURA */
-  .nom-tbl { width: 100%; border-collapse: collapse; margin-bottom: 8pt; font-size: 8.5pt; }
-  .nom-tbl td { border: 1pt solid #4472C4; padding: 4pt 6pt; }
-
-  /* FOOTER */
-  .page-footer {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    padding: 6pt 1.6cm 4pt;
-    background: white;
-  }
-  .footer-bar {
-    height: 5pt;
-    background: linear-gradient(90deg, #C9A820 0%, #e8c840 50%, #C9A820 100%);
-    margin-top: 4pt; border-radius: 2pt;
-  }
-  .footer-logos {
-    display: flex; justify-content: center; align-items: center;
-    gap: 24pt; padding-bottom: 4pt;
-  }
-  .footer-sepe { display: flex; align-items: center; gap: 6pt; }
-  .footer-uset { text-align: left; }
-  .footer-qr { position: absolute; left: 1.6cm; bottom: 12pt; }
-
-  /* SECTION SPACING */
-  .section { margin-bottom: 12pt; }
-  .mt { margin-top: 10pt; }
-
-  /* APRENDIZAJES */
-  .aprendizaje-item { padding: 3pt 0 3pt 10pt; border-left: 3pt solid #5a9e44; margin-bottom: 4pt; font-size: 9pt; }
-
-  /* EVALUACION */
-  .eval-section { background: #f8f4ff; border: 1pt solid #4472C4; border-radius: 3pt; padding: 8pt; margin-bottom: 8pt; }
-  .eval-title { color: #7030A0; font-weight: bold; font-size: 10pt; margin-bottom: 5pt; }
-
-  /* GAMIFICACION */
-  .gami-box { background: #eff6ff; border: 1.5pt solid #93c5fd; border-radius: 4pt; padding: 8pt; margin-bottom: 8pt; }
-  .sust-box { background: #f0fdf4; border: 1.5pt solid #86efac; border-radius: 4pt; padding: 8pt; margin-bottom: 8pt; }
-</style>
-</head>
-<body>
-
-${watermark}
-
-<!-- ═══════════════════════════ PÁGINA 1: DATOS GENERALES ═══════════════════════════ -->
-<div class="page content page-break">
-  ${header}
-
-  <div class="section">
-    <div class="banner-green">Plano Didáctico de ${form.disciplina} correspondiente al Ciclo Escolar 2025 – 2026</div>
-  </div>
-
-  <table class="tbl">
-    <tr>
-      <td class="lbl" style="width:30%">Escuela: ${form.escuela}</td>
-      <td class="val" colspan="2" style="width:70%">CCT: ${form.cct || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'}</td>
-    </tr>
-    <tr>
-      <td class="lbl">Zona Escolar: ${form.zonaEscolar || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'}</td>
-      <td class="lbl" style="width:20%">Turno: ${form.turno}</td>
-      <td class="lbl">Localidad: ${form.municipio}, ${form.estado}</td>
-    </tr>
-    <tr>
-      <td class="lbl">Grados y Grupos: ${form.grado} – ${form.grupoAlumnos ? form.grupoAlumnos+' alumnos' : ''}</td>
-      <td class="lbl" colspan="2">Nombre del docente: ${form.docente}</td>
-    </tr>
-  </table>
-
-  <table class="tbl">
-    <tr>
-      <td class="lbl">Periodo de Aplicación:</td>
-      <td class="val">${plan.periodoAplicacion || 'Ciclo Escolar 2025-2026'}</td>
-    </tr>
-  </table>
-
-  <div class="section mt">
-    <div class="banner-green" style="margin-bottom:0">Plano Didáctico</div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════ PÁGINA 2: GENERALIDADES + EJES ═══════════════════════════ -->
-<div class="page content page-break">
-  ${header}
-
-  <table class="tbl" style="margin-bottom:10pt">
-    <tr>
-      <td class="tbl-header" colspan="3">Generalidades (Estructura General del Proyecto)</td>
-    </tr>
-    <tr>
-      <td class="lbl" style="width:18%">Situación-Problema</td>
-      <td class="val" colspan="2">${plan.situacionProblema || form.problematica}</td>
-    </tr>
-    <tr>
-      <td class="lbl">Escenario</td>
-      <td class="val" style="width:28%">(${plan.escenario==='Aula'?'✓':'&nbsp;&nbsp;'}) Aula</td>
-      <td class="val" style="width:27%">(&nbsp;&nbsp;) Escolar</td>
-    </tr>
-    <tr>
-      <td class="lbl">Nombre del Proyecto</td>
-      <td class="val" colspan="2">${plan.nombreProyecto || ''}</td>
-    </tr>
-    <tr>
-      <td class="lbl">Metodología</td>
-      <td class="val" colspan="2">${form.metodologia}</td>
-    </tr>
-    <tr>
-      <td class="lbl">Producto</td>
-      <td class="val" colspan="2">${plan.producto || ''}</td>
-    </tr>
-  </table>
-
-  <table class="ejes-tbl">
-    <tr>
-      <td class="tbl-subheader" style="width:40pt">Marcar</td>
-      <td class="tbl-subheader" colspan="2">Ejes Articuladores</td>
-    </tr>
-    ${ejesTodos.map(e=>`
-    <tr>
-      <td class="ejes-mark">(${e.marcado?'✓':'&nbsp;&nbsp;&nbsp;'})</td>
-      <td class="ejes-num">${e.num}.</td>
-      <td style="font-size:9pt;padding:4pt 7pt">${e.nombre}</td>
-    </tr>`).join('')}
-  </table>
-</div>
-
-<!-- ═══════════════════════════ PÁGINA 3: CONTENIDO + PDA + APRENDIZAJES ═══════════════════════════ -->
-<div class="page content page-break">
-  ${header}
-
-  <table class="tbl" style="margin-bottom:10pt">
-    <tr><td class="tbl-header">Contenido</td></tr>
-    <tr><td class="val" style="min-height:50pt;padding:8pt">${(plan.contenido||form.contenido).replace(/\n/g,'<br>')}</td></tr>
-    <tr><td class="tbl-header">Procesos de Desarrollo de Aprendizaje</td></tr>
-    <tr><td class="val" style="min-height:60pt;padding:8pt">${(plan.pda||form.pda).replace(/\n/g,'<br>')}</td></tr>
-  </table>
-
-  <div class="section">
-    <div class="banner-purple" style="margin-bottom:6pt">Aprendizajes Esperados</div>
-    ${(plan.aprendizajesEsperados||[]).map((a,i)=>`
-      <div class="aprendizaje-item"><strong>${i+1}.</strong> ${a}</div>
-    `).join('')}
-  </div>
-
-  <div class="section mt">
-    <div class="banner-green" style="margin-bottom:0">Campo Formativo: ${form.campo} &nbsp;|&nbsp; Eje Articulador: ${form.eje}</div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════ PÁGINA 4: NOMENCLATURA + ESTRATEGIA ═══════════════════════════ -->
-<div class="page content page-break">
-  ${header}
-
-  <table class="nom-tbl">
-    <tr><td class="tbl-subheader" colspan="7">Nomenclatura del tipo de Actividades</td></tr>
-    <tr>
-      <td><strong>C</strong> – Contenido</td>
-      <td><strong>EV</strong> – Evaluación</td>
-      <td><strong>F1</strong> – Fase 1</td>
-      <td><strong>F2</strong> – Fase 2</td>
-      <td><strong>F3</strong> – Fase 3</td>
-      <td><strong>F4</strong> – Fase 4</td>
-      <td><strong>F5</strong> – Fase 5</td>
-    </tr>
-  </table>
-
-  <table class="nom-tbl" style="margin-bottom:12pt">
-    <tr><td class="tbl-subheader" colspan="9">Nomenclatura del Proceso de Evaluación Formativa</td></tr>
-    <tr>
-      <td><strong>MO</strong> – Motivar y Orientar</td>
-      <td><strong>ES</strong> – Establecer y Socializar criterios</td>
-      <td><strong>E</strong> – Explorar</td>
-      <td><strong>M</strong> – Monitoreo</td>
-      <td><strong>C</strong> – Control</td>
-      <td><strong>RL</strong> – Resaltar Logros</td>
-      <td><strong>PA</strong> – Promover Autoevaluación</td>
-      <td><strong>PC</strong> – Promover Coevaluación</td>
-      <td><strong>R</strong> – Retroalimentación</td>
-    </tr>
-  </table>
-
-  <table class="strat-table">
-    <tr>
-      <th rowspan="2" style="width:28pt">Periodo lectivo<br>(Sesiones)</th>
-      <th colspan="3">Actividades</th>
-      <th rowspan="2" style="width:10%">Forma de<br>trabajo</th>
-      <th rowspan="2" style="width:14%">Materiales</th>
-    </tr>
-    <tr>
-      <th style="width:28pt">Tipo</th>
-      <th style="width:42%">Descripción</th>
-      <th style="width:12%">Proceso de Evaluación Formativa</th>
-    </tr>
-    ${sessionRows}
-  </table>
-</div>
-
-<!-- ═══════════════════════════ PÁGINA 5: EVALUACIÓN ═══════════════════════════ -->
-<div class="page content page-break">
-  ${header}
-
-  <div class="banner-purple" style="margin-bottom:10pt">Estrategia de Evaluación Integral</div>
-
-  <div class="eval-section">
-    <div class="eval-title">📋 Evaluación Diagnóstica</div>
-    <p style="font-size:9pt;line-height:1.6">${(plan.evaluacion?.diagnostica||'').replace(/\n/g,'<br>')}</p>
-  </div>
-
-  <div class="eval-section">
-    <div class="eval-title">📊 Evaluación Formativa</div>
-    <p style="font-size:9pt;line-height:1.6">${(plan.evaluacion?.formativa||'').replace(/\n/g,'<br>')}</p>
-  </div>
-
-  ${rubricRows ? `
-  <div class="banner-green" style="margin-bottom:6pt;font-size:10pt">Rúbrica de Evaluación Sumativa</div>
-  <table class="tbl" style="font-size:8pt">
-    <tr>
-      <th style="background:#7030A0;color:white;padding:5pt;border:1pt solid #4472C4;width:18%">Criterio</th>
-      <th style="background:#2e7d32;color:white;padding:5pt;border:1pt solid #4472C4">Excelente (4)</th>
-      <th style="background:#f9a825;color:white;padding:5pt;border:1pt solid #4472C4">Satisfactorio (3)</th>
-      <th style="background:#e65100;color:white;padding:5pt;border:1pt solid #4472C4">En desarrollo (2)</th>
-      <th style="background:#c62828;color:white;padding:5pt;border:1pt solid #4472C4">Insuficiente (1)</th>
-    </tr>
-    ${rubricRows}
-  </table>
-  ` : ''}
-</div>
-
-<!-- ═══════════════════════════ PÁGINA 6: EXTRAS + FUNDAMENTACIÓN ═══════════════════════════ -->
-<div class="page content">
-  ${header}
-
-  ${plan.gamificacion ? `
-  <div class="banner-blue" style="margin-bottom:8pt">🎮 Estrategia de Gamificación</div>
-  <div class="gami-box">
-    <p style="font-size:9pt;margin-bottom:6pt"><strong>Sistema de puntos:</strong> ${plan.gamificacion.sistema}</p>
-    <p style="font-size:9pt;margin-bottom:4pt"><strong>Insignias:</strong></p>
-    ${(plan.gamificacion.insignias||[]).map((ins,i)=>`<div class="aprendizaje-item">🏅 ${ins}</div>`).join('')}
-    <p style="font-size:9pt;margin-top:6pt;margin-bottom:4pt"><strong>Retos opcionales:</strong></p>
-    ${(plan.gamificacion.retos||[]).map((r,i)=>`<div class="aprendizaje-item">⚡ ${r}</div>`).join('')}
-  </div>
-  ` : ''}
-
-  ${plan.sustentabilidad ? `
-  <div class="banner-green" style="margin-bottom:8pt">♻️ Educación Ambiental y Sustentabilidad</div>
-  <div class="sust-box">
-    <p style="font-size:9pt;margin-bottom:6pt"><strong>Materiales reciclados:</strong> ${plan.sustentabilidad.materiales}</p>
-    <p style="font-size:9pt;margin-bottom:6pt"><strong>Actividad ambiental:</strong> ${plan.sustentabilidad.actividad}</p>
-    <p style="font-size:9pt"><strong>Vinculación con ODS:</strong> ${plan.sustentabilidad.ods}</p>
-  </div>
-  ` : ''}
-
-  <div class="section">
-    <div class="banner-purple" style="margin-bottom:6pt">Fundamentación Curricular</div>
-    <div style="background:#f9f9f9;border:1pt solid #ccc;border-radius:3pt;padding:8pt;font-size:9pt;line-height:1.7">
-      ${(plan.fundamentacion||'').replace(/\n/g,'<br>')}
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="banner-green" style="margin-bottom:6pt">Notas Adicionales / Adecuaciones Curriculares</div>
-    <div style="border:1pt solid #4472C4;border-radius:3pt;padding:8pt;min-height:50pt;font-size:9pt">
-      ${form.notasExtra||'Sin adecuaciones curriculares específicas indicadas.'}
-    </div>
-  </div>
-
-  <div style="margin-top:20pt;text-align:center;font-size:8pt;color:#888;border-top:1pt solid #e2e8f0;padding-top:8pt">
-    ⚠️ Documento generado con apoyo de Inteligencia Artificial como herramienta pedagógica. 
-    El docente es responsable de su revisión, adaptación y aplicación. · SEP · NEM 2022
-  </div>
-</div>
-
-${footer}
-
-</body>
-</html>`;
+  const blob = await Packer.toBlob(wordDoc);
+  const url  = URL.createObjectURL(blob);
+  const link = window.document.createElement("a");
+  link.href = url;
+  link.download = `PlanoDidactico_${form.disciplina}_${(form.escuela || "NEM").replace(/\s+/g, "_")}.docx`;
+  window.document.body.appendChild(link);
+  link.click();
+  window.document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
+
 
 // ── Welcome Screen ─────────────────────────────────────────────────────────────
 function WelcomeScreen({onStart}) {
@@ -894,8 +803,8 @@ function WelcomeScreen({onStart}) {
   const features = [
     {icon:"🎓",text:"Plan de Estudios NEM 2022"},
     {icon:"🤖",text:"IA Gemini 1.5 Flash"},
-    {icon:"📄",text:"PDF con formato SEPE Tlaxcala"},
-    {icon:"⚡",text:"Planeaciones ultra-detalladas"},
+    {icon:"📝",text:"Word con formato SEPE Tlaxcala"},
+    {icon:"📦",text:"Producto entregable cada 5 sesiones"},
   ];
   return (
     <div style={{maxWidth:660,margin:"0 auto",padding:"2.5rem 1rem"}}>
@@ -963,12 +872,17 @@ function ResultView({result, planData, form, onNew}) {
     navigator.clipboard.writeText(result).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});
   },[result]);
 
-  const handlePrint = ()=>{
-    const html = generateFormatHTML(form, planData);
-    const w = window.open("","_blank");
-    w.document.write(html);
-    w.document.close();
-    setTimeout(()=>{w.focus();w.print();},1000);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadWord = async () => {
+    if (!planData) return;
+    setDownloading(true);
+    try {
+      await generateWordDoc(form, planData);
+    } catch(e) {
+      alert("Error al generar el Word: " + e.message);
+    }
+    setDownloading(false);
   };
 
   return (
@@ -987,13 +901,14 @@ function ResultView({result, planData, form, onNew}) {
           </div>
         </div>
         <div style={{display:"flex",gap:"0.6rem",flexWrap:"wrap"}}>
-          <button onClick={handlePrint} style={{
-            padding:"0.65rem 1.4rem",borderRadius:"0.625rem",cursor:"pointer",
+          <button onClick={handleDownloadWord} disabled={downloading} style={{
+            padding:"0.65rem 1.4rem",borderRadius:"0.625rem",cursor:downloading?"wait":"pointer",
             background:"white",border:"none",color:"#065f46",
             fontWeight:700,fontSize:"0.85rem",fontFamily:"'DM Sans',sans-serif",
             boxShadow:"0 2px 8px rgba(0,0,0,0.15)",
+            opacity: downloading ? 0.7 : 1,
           }}>
-            🖨️ Exportar PDF (Formato SEPE)
+            {downloading ? "⏳ Generando Word…" : "📝 Descargar Word (Formato SEPE)"}
           </button>
           <button onClick={handleCopy} style={{
             padding:"0.65rem 1.2rem",borderRadius:"0.625rem",cursor:"pointer",
@@ -1001,7 +916,7 @@ function ResultView({result, planData, form, onNew}) {
             color:copied?"#059669":"white",fontWeight:700,fontSize:"0.82rem",
             fontFamily:"'DM Sans',sans-serif",
           }}>
-            {copied?"✓ Copiado":"📋 Copiar texto"}
+            {copied?"✓ Copiado":"📋 Copiar JSON"}
           </button>
           <button onClick={onNew} style={{
             padding:"0.65rem 1.1rem",borderRadius:"0.625rem",cursor:"pointer",
@@ -1016,11 +931,11 @@ function ResultView({result, planData, form, onNew}) {
       {/* Badge de formato */}
       <div style={{background:"#eff6ff",border:"1.5px solid #93c5fd",borderRadius:"0.75rem",
         padding:"0.75rem 1rem",marginBottom:"1.25rem",display:"flex",alignItems:"center",gap:"0.75rem"}}>
-        <span style={{fontSize:"1.4rem"}}>📄</span>
+        <span style={{fontSize:"1.4rem"}}>📝</span>
         <div>
-          <p style={{fontSize:"0.8rem",fontWeight:700,color:"#1d4ed8",fontFamily:"'DM Sans',sans-serif"}}>PDF con Formato Oficial SEPE – USET Tlaxcala</p>
+          <p style={{fontSize:"0.8rem",fontWeight:700,color:"#1d4ed8",fontFamily:"'DM Sans',sans-serif"}}>Word con Formato Oficial SEPE – USET Tlaxcala</p>
           <p style={{fontSize:"0.72rem",color:"#475569",fontFamily:"'DM Sans',sans-serif"}}>
-            El PDF incluye: encabezado institucional, logos, datos del docente, generalidades, ejes articuladores, contenido, PDA, tabla de estrategia por sesión, rúbrica de evaluación y fundamentación.
+            Incluye: encabezado institucional, datos del plantel, generalidades, ejes articuladores, contenido y PDA (tal como los escribiste), tabla de sesiones con producto entregable cada 5 sesiones, rúbrica de evaluación.
           </p>
         </div>
       </div>
@@ -1032,7 +947,7 @@ function ResultView({result, planData, form, onNew}) {
             <span key={i} style={{width:"0.65rem",height:"0.65rem",borderRadius:"9999px",background:c,display:"inline-block"}}/>
           ))}
           <span style={{color:"#94a3b8",fontSize:"0.72rem",fontFamily:"monospace",marginLeft:"0.5rem"}}>
-            planeacion_{(form.disciplina||"nem").toLowerCase().replace(/\s+/g,"_")}.json → html → pdf
+            planeacion_{(form.disciplina||"nem").toLowerCase().replace(/\s+/g,"_")}.json → .docx
           </span>
         </div>
         <div style={{padding:"1.5rem 2rem",maxHeight:"55vh",overflowY:"auto"}}>
