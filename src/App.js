@@ -1184,7 +1184,7 @@ export default function App(){
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${API_KEY}`,
         {method:"POST",headers:{"Content-Type":"application/json"},
           body:JSON.stringify({
-            contents:[{parts:[{text:buildJsonPrompt(form)}]}],
+            contents:[{parts:[{text:buildPrompt(form)}]}],
             generationConfig:{temperature:0.6,maxOutputTokens:8192},
           })}
       );
