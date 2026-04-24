@@ -297,11 +297,11 @@ Notas: ${f.notasExtra||"Ninguna"}
 
 INSTRUCCIÓN CRÍTICA: Responde ÚNICAMENTE con JSON válido. Sin texto antes ni después. Sin backticks. Solo el JSON.
 
-REGLAS POR SESIÓN (cada campo debe ser LARGO, EJEMPLIFICADO y ÚNICO):
-- "inicio": instrucciones paso a paso, 5 preguntas detonadoras entrecomilladas y numeradas, ejemplo real del tema, organización del aula.
-- "desarrollo": instrucciones directas del docente, 3+ ejemplos resueltos con datos REALES del tema (números concretos), roles de equipos, preguntas de andamiaje.
-- "cierre": síntesis con instrucciones, 3 preguntas metacognitivas entrecomilladas, producto/evidencia, tarea con ejemplo.
-NO incluyas el campo "descripcionCompleta".
+REGLAS POR SESIÓN — contenido concreto y ejemplificado, sin exceso de texto:
+- "inicio": actividad de apertura con pasos numerados, 3 preguntas detonadoras entrecomilladas específicas del tema, y un ejemplo real para activar saberes previos.
+- "desarrollo": instrucciones claras del docente, 2 ejemplos completamente resueltos con datos reales (números, fechas o nombres concretos según la disciplina), 2 preguntas de andamiaje entrecomilladas, y el producto que generan los alumnos.
+- "cierre": síntesis en 2-3 oraciones, 2 preguntas metacognitivas entrecomilladas, y la evidencia que queda de la sesión.
+NO incluyas el campo "descripcionCompleta". Cada sesión debe ser única y mostrar progresión.
 
 {
   "periodoAplicacion": "string",
@@ -326,9 +326,9 @@ NO incluyas el campo "descripcionCompleta".
       "numero": 1,
       "tipo": "F1",
       "titulo": "string (título creativo de la sesión)",
-      "inicio": "string LARGO — actividad de apertura, 5 preguntas detonadoras, ejemplo real, organización del aula",
-      "desarrollo": "string MUY LARGO — instrucciones directas, 3+ ejemplos resueltos con datos reales del tema, equipos con roles, preguntas de andamiaje",
-      "cierre": "string LARGO — síntesis con instrucciones, 3 preguntas metacognitivas, producto de la sesión, tarea con ejemplo",
+      "inicio": "pasos numerados + 3 preguntas detonadoras entre comillas + ejemplo real del tema",
+      "desarrollo": "instrucciones del docente + 2 ejemplos resueltos con datos reales + 2 preguntas de andamiaje entre comillas + producto generado",
+      "cierre": "síntesis breve + 2 preguntas metacognitivas entre comillas + evidencia de la sesión",
       "evaluacionFormativa": "MO, ES, E",
       "formaTrabajo": "string",
       "materiales": "string"
@@ -1199,7 +1199,7 @@ export default function App(){
    const API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
     try {
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${API_KEY}`,
         {method:"POST",headers:{"Content-Type":"application/json"},
           body:JSON.stringify({
             contents:[{parts:[{text:buildJsonPrompt(form)}]}],
