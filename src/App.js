@@ -1178,13 +1178,13 @@ export default function App(){
     setLoading(true);setMsg(MSGS[0]);
     let i=0;
     const iv=setInterval(()=>{i=(i+1)%MSGS.length;setMsg(MSGS[i]);},2400);
-    const API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
-    try{
-      const res=await fetch(
+   const API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
+    try {
+      const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${API_KEY}`,
         {method:"POST",headers:{"Content-Type":"application/json"},
           body:JSON.stringify({
-            contents:[{parts:[{text:buildPrompt(form)}]}],
+            contents:[{parts:[{text:buildJsonPrompt(form)}]}],
             generationConfig:{temperature:0.6,maxOutputTokens:8192},
           })}
       );
