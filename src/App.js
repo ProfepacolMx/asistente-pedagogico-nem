@@ -295,14 +295,13 @@ Problemática: ${f.problematica}
 Gamificación: ${f.gamificacion?"SÍ":"NO"} | Sustentabilidad: ${f.reciclaje?"SÍ":"NO"}
 Notas: ${f.notasExtra||"Ninguna"}
 
-INSTRUCCIÓN CRÍTICA: Responde ÚNICAMENTE con JSON válido. Cero texto antes o después. Cero markdown. Cero backticks. Solo el objeto JSON.
+INSTRUCCIÓN CRÍTICA: Responde ÚNICAMENTE con JSON válido. Sin texto antes ni después. Sin backticks. Solo el JSON.
 
-REGLAS DE CONTENIDO POR SESIÓN (OBLIGATORIAS SIN EXCEPCIÓN):
-- inicio: MÍNIMO 300 palabras. Incluye: nombre de la actividad de apertura, instrucciones textuales paso a paso, EXACTAMENTE 5 preguntas detonadoras entrecomilladas y numeradas, descripción de cómo se activan saberes previos con un ejemplo real del tema, organización del espacio físico del aula.
-- desarrollo: MÍNIMO 500 palabras. Incluye: nombre de la estrategia central, instrucciones textuales que el docente puede leer directamente, MÍNIMO 3 ejemplos resueltos con números/datos reales del tema (no genéricos), descripción detallada de la dinámica por equipos o individual, roles específicos de cada integrante, cómo el docente circula y monitorea, preguntas de andamiaje que el docente hace durante el recorrido, producto intermedio que se genera.
-- cierre: MÍNIMO 200 palabras. Incluye: actividad de síntesis con instrucciones, EXACTAMENTE 3 preguntas metacognitivas entrecomilladas, descripción del producto/evidencia que queda de la sesión, instrucción de tarea o extensión con ejemplos concretos.
-- CADA SESIÓN debe tener contenido ÚNICO y DIFERENTE a las demás, mostrando progresión pedagógica clara.
-- descripcionCompleta: concatenación de inicio+desarrollo+cierre como texto corrido con subtítulos INICIO:, DESARROLLO:, CIERRE:
+REGLAS POR SESIÓN (cada campo debe ser LARGO, EJEMPLIFICADO y ÚNICO):
+- "inicio": instrucciones paso a paso, 5 preguntas detonadoras entrecomilladas y numeradas, ejemplo real del tema, organización del aula.
+- "desarrollo": instrucciones directas del docente, 3+ ejemplos resueltos con datos REALES del tema (números concretos), roles de equipos, preguntas de andamiaje.
+- "cierre": síntesis con instrucciones, 3 preguntas metacognitivas entrecomilladas, producto/evidencia, tarea con ejemplo.
+NO incluyas el campo "descripcionCompleta".
 
 {
   "periodoAplicacion": "string",
@@ -327,10 +326,9 @@ REGLAS DE CONTENIDO POR SESIÓN (OBLIGATORIAS SIN EXCEPCIÓN):
       "numero": 1,
       "tipo": "F1",
       "titulo": "string (título creativo de la sesión)",
-      "inicio": "string — MÍNIMO 300 palabras. Actividad de apertura con nombre, instrucciones paso a paso, 5 preguntas detonadoras textuales numeradas y entrecomilladas, cómo se activan saberes previos con ejemplo real del tema, organización del aula",
-      "desarrollo": "string — MÍNIMO 500 palabras. Estrategia central con nombre, instrucciones textuales directas, 3 ejemplos resueltos con datos reales del tema, dinámica de equipos con roles, monitoreo docente, preguntas de andamiaje entrecomilladas, producto intermedio",
-      "cierre": "string — MÍNIMO 200 palabras. Actividad de síntesis con instrucciones, 3 preguntas metacognitivas entrecomilladas, evidencia que queda, tarea con ejemplo concreto",
-      "descripcionCompleta": "string — texto corrido: INICIO: [texto] DESARROLLO: [texto] CIERRE: [texto]",
+      "inicio": "string LARGO — actividad de apertura, 5 preguntas detonadoras, ejemplo real, organización del aula",
+      "desarrollo": "string MUY LARGO — instrucciones directas, 3+ ejemplos resueltos con datos reales del tema, equipos con roles, preguntas de andamiaje",
+      "cierre": "string LARGO — síntesis con instrucciones, 3 preguntas metacognitivas, producto de la sesión, tarea con ejemplo",
       "evaluacionFormativa": "MO, ES, E",
       "formaTrabajo": "string",
       "materiales": "string"
@@ -456,7 +454,7 @@ function buildPdfHtml(form, plan){
 <tr class="sr">
   <td class="tn">${s.numero}</td>
   <td class="tt">${s.tipo||"F1"}</td>
-  <td class="td">${(s.descripcionCompleta||"").replace(/\n/g,"<br>")}</td>
+  <td class="td">${([s.inicio,s.desarrollo,s.cierre].filter(Boolean).join("\n\n--- \n\n") || s.descripcionCompleta || "").replace(/\n/g,"<br>")}</td>
   <td class="te">${s.evaluacionFormativa||""}</td>
   <td class="tf">${s.formaTrabajo||""}</td>
   <td class="tm">${s.materiales||""}</td>
@@ -1099,6 +1097,19 @@ function ResultView({result,planData,form,onNew}){
         </div>
       </div>
 
+      {/* Warning when no structured data */}
+      {!hasPlan && (
+        <div style={{background:"#fef3c7",border:"1.5px solid #fbbf24",borderRadius:"0.75rem",
+          padding:"0.8rem 1rem",marginBottom:"0.8rem",display:"flex",alignItems:"center",gap:"0.75rem"}}>
+          <span style={{fontSize:"1.4rem"}}>⚠️</span>
+          <div>
+            <p style={{fontSize:"0.8rem",fontWeight:700,color:"#92400e",fontFamily:"'DM Sans',sans-serif"}}>El JSON no pudo ser procesado</p>
+            <p style={{fontSize:"0.7rem",color:"#78350f",fontFamily:"'DM Sans',sans-serif"}}>
+              El PDF y Word se exportarán sin contenido de sesiones. Intenta reducir el número de sesiones a 3-4, o vuelve a generar.
+            </p>
+          </div>
+        </div>
+      )}
       {/* Info badges */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.6rem",marginBottom:"1rem"}}>
         <div style={{background:"#eff6ff",border:"1.5px solid #93c5fd",borderRadius:"0.75rem",
@@ -1129,7 +1140,14 @@ function ResultView({result,planData,form,onNew}){
           <span style={{color:"#94a3b8",fontSize:"0.72rem",fontFamily:"monospace",marginLeft:"0.5rem"}}>
             planeacion_nem_{(form.disciplina||"").toLowerCase().replace(/\s+/g,"_")}.json
           </span>
-          {hasPlan&&<span style={{marginLeft:"auto",fontSize:"0.68rem",color:"#4ade80",fontFamily:"'DM Sans',sans-serif"}}>✓ JSON estructurado</span>}
+          {hasPlan
+            ? <span style={{marginLeft:"auto",fontSize:"0.68rem",color:"#4ade80",fontFamily:"'DM Sans',sans-serif"}}>
+                ✓ JSON · {planData.sesiones?.length||0} sesiones generadas
+              </span>
+            : <span style={{marginLeft:"auto",fontSize:"0.68rem",color:"#f87171",fontFamily:"'DM Sans',sans-serif"}}>
+                ⚠ JSON no parseado — revisa la API key o reduce sesiones
+              </span>
+          }
         </div>
         <div style={{padding:"1.5rem 2rem",maxHeight:"52vh",overflowY:"auto"}}>
           <pre style={{fontFamily:"'Courier New',monospace",fontSize:"0.78rem",
@@ -1184,7 +1202,7 @@ export default function App(){
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${API_KEY}`,
         {method:"POST",headers:{"Content-Type":"application/json"},
           body:JSON.stringify({
-            contents:[{parts:[{text:buildPrompt(form)}]}],
+            contents:[{parts:[{text:buildJsonPrompt(form)}]}],
             generationConfig:{temperature:0.6,maxOutputTokens:8192},
           })}
       );
@@ -1195,9 +1213,31 @@ export default function App(){
         const clean=raw.replace(/```json\s*/gi,"").replace(/```\s*/g,"").trim();
         setPlan(JSON.parse(clean));
       }catch(_){
-        const m=raw.match(/\{[\s\S]*\}/);
-        if(m){try{setPlan(JSON.parse(m[0]));}catch(_){setPlan(null);}}
-        else setPlan(null);
+        // Try extracting JSON block
+        const m=raw.match(/\{[\s\S]*/);
+        if(m){
+          let candidate=m[0];
+          // Try to fix truncated JSON by closing open braces/brackets
+          try{JSON.parse(candidate);setPlan(JSON.parse(candidate));}
+          catch(_2){
+            // Count and close unclosed brackets/braces
+            let opens=0,openb=0,inStr=false,esc=false;
+            for(const c of candidate){
+              if(esc){esc=false;continue;}
+              if(c==="\\"){esc=true;continue;}
+              if(c==='"'&&!esc){inStr=!inStr;continue;}
+              if(inStr)continue;
+              if(c==='{')opens++;else if(c==='}')opens--;
+              else if(c==='[')openb++;else if(c===']')openb--;
+            }
+            // Close any open string, then close brackets
+            if(inStr)candidate+='"';
+            while(openb-->0)candidate+=']';
+            while(opens-->0)candidate+='}';
+            try{setPlan(JSON.parse(candidate));}
+            catch(_3){setPlan(null);}
+          }
+        }else setPlan(null);
       }
     }catch(e){
       setResult("❌ Error de conexión:\n"+e.message);
